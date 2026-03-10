@@ -429,6 +429,95 @@
     .pmi-ic { font-size:19px; width:22px; text-align:center; }
     .pmi-arr { margin-left:auto; color:var(--text-sec); }
 
+    /* ── CART ── */
+    #cart-fab {
+      position:absolute; bottom:calc(var(--nav-h) + 14px); left:50%; transform:translateX(-50%);
+      z-index:130; display:none; align-items:center; gap:8px;
+      background:#1A1A2E; color:white; border:none; border-radius:22px;
+      padding:11px 20px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700;
+      cursor:pointer; box-shadow:0 6px 24px rgba(0,0,0,.28);
+      transition:transform .2s, bottom .35s var(--ease);
+    }
+    #cart-fab.visible { display:flex; }
+    #cart-fab.shifted { bottom:calc(var(--nav-h) + 170px); }
+    #cart-fab:active { transform:translateX(-50%) scale(.96); }
+    .cart-fab-count {
+      background:#EF4444; color:white; font-size:11px; font-weight:800;
+      width:20px; height:20px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    /* Cart Overlay */
+    #cart-overlay {
+      position:absolute; inset:0; z-index:500;
+      display:flex; flex-direction:column; justify-content:flex-end;
+      pointer-events:none; opacity:0; transition:opacity .3s;
+    }
+    #cart-overlay.on { opacity:1; pointer-events:all; }
+    #cart-overlay .co-backdrop {
+      position:absolute; inset:0; background:rgba(0,0,0,.4);
+    }
+    .cart-sheet {
+      position:relative; background:white;
+      border-radius:22px 22px 0 0;
+      padding:0 0 calc(var(--nav-h) + 8px);
+      max-height:80vh; display:flex; flex-direction:column;
+      box-shadow:0 -8px 40px rgba(0,0,0,.18);
+      transform:translateY(100%); transition:transform .38s var(--ease);
+    }
+    #cart-overlay.on .cart-sheet { transform:translateY(0); }
+    .cart-hd {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:18px 18px 12px; border-bottom:1px solid #F3F4F6; flex-shrink:0;
+    }
+    .cart-title { font-size:17px; font-weight:700; }
+    .cart-clear { font-size:12px; color:#EF4444; font-weight:600; background:none; border:none; cursor:pointer; }
+    .cart-close {
+      width:30px; height:30px; border-radius:50%; background:#F3F4F6;
+      border:none; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;
+    }
+    .cart-items { flex:1; overflow-y:auto; padding:12px 18px; display:flex; flex-direction:column; gap:10px; }
+    .cart-empty { text-align:center; padding:40px 0; color:var(--text-sec); font-size:14px; }
+    .cart-item {
+      display:flex; align-items:center; gap:11px;
+      padding:11px 13px; border-radius:14px; background:#F9FAFB; border:1.5px solid #F3F4F6;
+    }
+    .ci-emoji { font-size:22px; width:38px; text-align:center; flex-shrink:0; }
+    .ci-info { flex:1; min-width:0; }
+    .ci-name { font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ci-shop { font-size:11px; color:var(--text-sec); margin-top:1px; }
+    .ci-price { font-size:13px; font-weight:700; color:#22C55E; margin-top:2px; }
+    .ci-qty {
+      display:flex; align-items:center; gap:6px; flex-shrink:0;
+    }
+    .qty-btn {
+      width:26px; height:26px; border-radius:8px; border:none;
+      background:white; font-size:16px; font-weight:700; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 1px 4px rgba(0,0,0,.1); transition:background .15s; line-height:1;
+    }
+    .qty-btn:active { background:#F3F4F6; }
+    .qty-num { font-size:14px; font-weight:700; min-width:18px; text-align:center; }
+    .cart-footer { padding:14px 18px 0; border-top:1px solid #F3F4F6; flex-shrink:0; }
+    .cart-summary { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .cart-total-label { font-size:14px; color:var(--text-sec); }
+    .cart-total-amt { font-size:20px; font-weight:800; }
+    .btn-checkout {
+      width:100%; padding:14px; border-radius:13px; border:none;
+      background:#1A1A2E; color:white; font-family:'DM Sans',sans-serif;
+      font-size:15px; font-weight:700; cursor:pointer; transition:transform .15s;
+      box-shadow:0 4px 18px rgba(0,0,0,.22);
+    }
+    .btn-checkout:active { transform:scale(.98); }
+
+    /* Add to cart button on product cards */
+    .btn-cart {
+      padding:5px 10px; border-radius:8px; border:2px solid #1A1A2E;
+      background:transparent; color:#1A1A2E; font-family:'DM Sans',sans-serif;
+      font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap;
+    }
+    .btn-cart.in-cart { background:#1A1A2E; color:white; }
+
     /* ── TOAST ── */
     #toast {
       position:absolute; top:98px; left:50%; transform:translateX(-50%) translateY(-16px);
@@ -1102,6 +1191,34 @@
 
   <div id="toast"></div>
 
+  <!-- CART FAB -->
+  <button id="cart-fab" onclick="openCart()">
+    🛒 <span id="cart-fab-label">Cart</span>
+    <span class="cart-fab-count" id="cart-fab-count">0</span>
+  </button>
+
+  <!-- CART OVERLAY -->
+  <div id="cart-overlay">
+    <div class="co-backdrop" onclick="closeCart()"></div>
+    <div class="cart-sheet">
+      <div class="cart-hd">
+        <div class="cart-title">🛒 My Cart</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="cart-clear" onclick="clearCart()">Clear All</button>
+          <button class="cart-close" onclick="closeCart()">✕</button>
+        </div>
+      </div>
+      <div class="cart-items" id="cart-items"></div>
+      <div class="cart-footer" id="cart-footer" style="display:none">
+        <div class="cart-summary">
+          <span class="cart-total-label">Total</span>
+          <span class="cart-total-amt" id="cart-total">₹0</span>
+        </div>
+        <button class="btn-checkout" onclick="checkoutCart()">Proceed to Checkout →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-btn" data-tab="explore"  onclick="switchTab('explore')">
@@ -1579,12 +1696,16 @@ function buildSheet(d, mode) {
 
 /* ─── BUY SHEET ─── */
 function sheetBuy(s) {
-  const prods = s.products.map((p,i)=>`
+  const prods = s.products.map((p,i)=>{
+    const inCart = CART.some(c=>c.shopId===s.id && c.prodName===p.name);
+    return `
     <div class="product-card" id="pc${i}" onclick="selProd(${i})">
       <div class="prod-emoji">${p.emoji}</div>
       <div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-price">₹${p.price}</div></div>
-      <button class="btn-sel" id="ps${i}">Select</button>
-    </div>`).join('');
+      <button class="btn-cart ${inCart?'in-cart':''}" id="pca${i}" onclick="event.stopPropagation();cartToggle('${s.id}',${i})">${inCart?'✓ Added':'+ Cart'}</button>
+      <button class="btn-sel" id="ps${i}" onclick="event.stopPropagation();selProd(${i})">Select</button>
+    </div>`;
+  }).join('');
   return `
     <div class="bs-header">
       <div class="bs-emoji">${s.emoji}</div>
@@ -2362,6 +2483,119 @@ function renderExplore() {
 }
 function goMode(mode) { switchTab('near'); setMode(mode); }
 
+/* ─── CART ─── */
+const CART = []; // { shopId, shopName, shopEmoji, prodName, prodEmoji, price, qty }
+
+function cartToggle(shopId, prodIdx) {
+  const shop = DATA.buy.find(s=>s.id===shopId);
+  const p    = shop.products[prodIdx];
+  const idx  = CART.findIndex(c=>c.shopId===shopId && c.prodName===p.name);
+  if (idx !== -1) {
+    CART.splice(idx, 1);
+    toast(`🗑️ Removed "${p.name}" from cart`);
+  } else {
+    CART.push({ shopId, shopName:shop.name, shopEmoji:shop.emoji, prodName:p.name, prodEmoji:p.emoji, price:p.price, qty:1 });
+    toast(`🛒 "${p.name}" added to cart!`);
+  }
+  // Update the button in the open sheet
+  const btn = document.getElementById(`pca${prodIdx}`);
+  if (btn) {
+    const inCart = idx === -1; // we just added it
+    btn.textContent = inCart ? '✓ Added' : '+ Cart';
+    btn.classList.toggle('in-cart', inCart);
+  }
+  updateCartFab();
+}
+
+function updateCartFab() {
+  const fab   = document.getElementById('cart-fab');
+  const count = CART.reduce((s,c)=>s+c.qty, 0);
+  const total = CART.reduce((s,c)=>s+c.price*c.qty, 0);
+  document.getElementById('cart-fab-count').textContent = count;
+  document.getElementById('cart-fab-label').textContent = count === 1 ? `Cart • ₹${total}` : `Cart (${count}) • ₹${total}`;
+  fab.classList.toggle('visible', count > 0);
+  // shift above mode panel if mode panel is showing
+  fab.classList.toggle('shifted', document.getElementById('mode-panel').classList.contains('visible'));
+}
+
+function openCart() {
+  renderCartSheet();
+  document.getElementById('cart-overlay').classList.add('on');
+}
+
+function closeCart() {
+  document.getElementById('cart-overlay').classList.remove('on');
+}
+
+function clearCart() {
+  CART.length = 0;
+  renderCartSheet();
+  updateCartFab();
+}
+
+function changeQty(shopId, prodName, delta) {
+  const item = CART.find(c=>c.shopId===shopId && c.prodName===prodName);
+  if (!item) return;
+  item.qty = Math.max(1, item.qty + delta);
+  renderCartSheet();
+  updateCartFab();
+}
+
+function removeCartItem(shopId, prodName) {
+  const idx = CART.findIndex(c=>c.shopId===shopId && c.prodName===prodName);
+  if (idx !== -1) CART.splice(idx, 1);
+  renderCartSheet();
+  updateCartFab();
+  // Refresh open product card buttons if same shop sheet is open
+  if (S.marker && S.marker.id === shopId) {
+    const shop = DATA.buy.find(s=>s.id===shopId);
+    if (shop) {
+      shop.products.forEach((p,i)=>{
+        const btn = document.getElementById(`pca${i}`);
+        if (btn && p.name === prodName) { btn.textContent='+ Cart'; btn.classList.remove('in-cart'); }
+      });
+    }
+  }
+}
+
+function renderCartSheet() {
+  const box    = document.getElementById('cart-items');
+  const footer = document.getElementById('cart-footer');
+  if (!CART.length) {
+    box.innerHTML = `<div class="cart-empty">🛒<br><br>Your cart is empty<br><span style="font-size:12px">Tap <b>+ Cart</b> on any product to add it</span></div>`;
+    footer.style.display = 'none';
+    return;
+  }
+  box.innerHTML = CART.map(c=>`
+    <div class="cart-item">
+      <div class="ci-emoji">${c.prodEmoji}</div>
+      <div class="ci-info">
+        <div class="ci-name">${c.prodName}</div>
+        <div class="ci-shop">${c.shopEmoji} ${c.shopName}</div>
+        <div class="ci-price">₹${c.price * c.qty}</div>
+      </div>
+      <div class="ci-qty">
+        <button class="qty-btn" onclick="changeQty('${c.shopId}','${c.prodName.replace(/'/g,"\\'")}', -1)">−</button>
+        <span class="qty-num">${c.qty}</span>
+        <button class="qty-btn" onclick="changeQty('${c.shopId}','${c.prodName.replace(/'/g,"\\'")}', 1)">+</button>
+        <button class="qty-btn" style="font-size:12px;color:#EF4444" onclick="removeCartItem('${c.shopId}','${c.prodName.replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    </div>`).join('');
+  const total = CART.reduce((s,c)=>s+c.price*c.qty, 0);
+  document.getElementById('cart-total').textContent = `₹${total}`;
+  footer.style.display = 'block';
+}
+
+function checkoutCart() {
+  if (!CART.length) return;
+  const total = CART.reduce((s,c)=>s+c.price*c.qty, 0);
+  const items = CART.map(c=>`${c.prodName} ×${c.qty}`).join(', ');
+  closeCart();
+  toast(`✅ Order placed! ${items} — ₹${total}`);
+  CART.length = 0;
+  updateCartFab();
+}
+
 /* ─── UTILITIES ─── */
 let toastTimer;
 function toast(msg) {
@@ -2380,7 +2614,7 @@ function buildSearchIndex() {
   const idx = [];
   DATA.buy.forEach(s => {
     idx.push({ id:s.id, mode:'buy', emoji:s.emoji, name:s.name, sub:`${s.cat} • ${s.dist}`, badge:`⭐${s.rating}`, badgeColor:'#DCFCE7', badgeText:'#16A34A', keywords:`${s.name} ${s.cat} ${s.products.map(p=>p.name).join(' ')}`.toLowerCase() });
-    s.products.forEach(p => idx.push({ id:s.id, mode:'buy', emoji:p.emoji, name:p.name, sub:`At ${s.name} • ₹${p.price}`, badge:'Shop', badgeColor:'#EEF2FF', badgeText:'#3A5BFF', keywords:`${p.name} ${p.desc} ${s.name}`.toLowerCase() }));
+    s.products.forEach(p => idx.push({ id:s.id, mode:'buy', emoji:p.emoji, name:p.name, sub:`At ${s.name} • ₹${p.price}`, badge:'Shop', badgeColor:'#EEF2FF', badgeText:'#3A5BFF', productName:p.name, keywords:`${p.name} ${p.desc} ${s.name}`.toLowerCase() }));
   });
   DATA.travel.forEach(v => idx.push({ id:v.id, mode:'travel', emoji:v.emoji, name:`${v.name} — ${v.drvName}`, sub:`${v.routeName} • ${v.eta}`, badge:`${v.totalSeats-v.bookedSeats} seats`, badgeColor:'#FFF7ED', badgeText:'#EA580C', keywords:`${v.name} ${v.drvName} ${v.type} ${v.routeName} ${v.stops.join(' ')} auto rickshaw cab ride`.toLowerCase() }));
   DATA.services.forEach(s => idx.push({ id:s.id, mode:'services', emoji:s.emoji, name:s.name, sub:`${s.prof} • ${s.dist}`, badge:s.avail?'Available':'Busy', badgeColor:s.avail?'#DCFCE7':'#FEE2E2', badgeText:s.avail?'#16A34A':'#DC2626', keywords:`${s.name} ${s.prof} ${s.tags.join(' ')} ${s.desc}`.toLowerCase() }));
@@ -2397,9 +2631,10 @@ function onSearchFocus() {
   if (!val) showSuggestions();
 }
 function onSearchBlur() {
+  // Long enough delay so tap/click on a result fires first
   searchBlurTimer = setTimeout(()=>{
     document.getElementById('search-results').classList.remove('on');
-  }, 180);
+  }, 400);
 }
 function clearSearch() {
   document.getElementById('search-input').value = '';
@@ -2407,14 +2642,13 @@ function clearSearch() {
   document.getElementById('search-results').classList.remove('on');
 }
 function showSuggestions() {
-  // show popular categories when empty
+  const box = document.getElementById('search-results');
   const html = `<div class="sr-section">Popular Searches</div>
     ${['Electronics','Grocery','Auto Rickshaw','Electrician','Diwali Mela','Hospital','Plumber','Shared Cab']
-      .map(s=>`<div class="sr-item" onclick="runSearch('${s}')">
+      .map(s=>`<div class="sr-item" data-query="${s}">
         <div class="sr-item-ico">🔍</div>
         <div><div class="sr-item-name">${s}</div></div>
       </div>`).join('')}`;
-  const box = document.getElementById('search-results');
   box.innerHTML = html; box.classList.add('on');
 }
 function onSearchInput(val) {
@@ -2433,15 +2667,17 @@ function runSearch(query) {
     box.innerHTML = `<div class="sr-no-result">🔍 No results for "<b>${query}</b>"<br><span style="font-size:12px">Try: shop, auto, plumber, hospital…</span></div>`;
     box.classList.add('on'); return;
   }
-  // Group by mode
   const grouped = {};
   const modeLabel = {buy:'🛍️ Shops & Products', travel:'🚗 Travel', services:'🔧 Services', explore:'🎉 Events', emergency:'🚨 Emergency'};
-  results.forEach(r => { if(!grouped[r.mode]) grouped[r.mode] = []; grouped[r.mode].push(r); });
+  results.forEach(r => { if(!grouped[r.mode]) grouped[r.mode]=[]; grouped[r.mode].push(r); });
   let html = '';
   Object.entries(grouped).forEach(([mode, items]) => {
     html += `<div class="sr-section">${modeLabel[mode]}</div>`;
     html += items.slice(0,4).map(r=>`
-      <div class="sr-item" onclick="searchGoTo('${r.id}','${r.mode}')">
+      <div class="sr-item"
+        data-id="${r.id}"
+        data-mode="${r.mode}"
+        data-product="${r.productName || ''}">
         <div class="sr-item-ico">${r.emoji}</div>
         <div style="flex:1;min-width:0">
           <div class="sr-item-name">${r.name}</div>
@@ -2452,20 +2688,28 @@ function runSearch(query) {
   });
   box.innerHTML = html; box.classList.add('on');
 }
-function searchGoTo(id, mode) {
+function searchGoTo(id, mode, productName) {
+  clearTimeout(searchBlurTimer);
   document.getElementById('search-results').classList.remove('on');
+  document.getElementById('search-input').blur();
+  clearSearch();
   switchTab('near');
-  if (S.mode !== mode) {
-    if (mode === 'all') setModeAll();
-    else setMode(mode);
-  }
-  setTimeout(() => {
-    const item = DATA[mode] ? DATA[mode].find(x=>x.id===id) : null;
-    if (item) {
-      if (item.lat) map.panTo([item.lat,item.lng],{animate:true});
-      openBS(item, mode);
+  const doOpen = () => {
+    const item = DATA[mode] ? DATA[mode].find(x => x.id === id) : null;
+    if (!item) return;
+    if (item.lat) map.panTo([item.lat, item.lng], { animate:true });
+    openBS(item, mode);
+    if (productName && mode === 'buy') {
+      setTimeout(() => {
+        const shop = DATA.buy.find(s => s.id === id);
+        if (!shop) return;
+        const pIdx = shop.products.findIndex(p => p.name === productName);
+        if (pIdx !== -1) selProd(pIdx);
+      }, 180);
     }
-  }, mode !== S.mode ? 400 : 50);
+  };
+  if (S.mode !== mode) { setMode(mode); setTimeout(doOpen, 420); }
+  else doOpen();
 }
 
 /* ─── SPLASH + INIT ─── */
@@ -2483,6 +2727,23 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('composer-inp').addEventListener('focus', ()=>{
     document.getElementById('composer-bar').style.display='flex';
   });
+
+  // Delegated listener on search results box — fires before blur hides the dropdown
+  const srBox = document.getElementById('search-results');
+  function handleSrTap(e) {
+    const item = e.target.closest('.sr-item');
+    if (!item) return;
+    e.preventDefault();
+    clearTimeout(searchBlurTimer);
+    const query = item.dataset.query;
+    if (query) { runSearch(query); return; }
+    const id      = item.dataset.id;
+    const mode    = item.dataset.mode;
+    const product = item.dataset.product;
+    if (id && mode) searchGoTo(id, mode, product || undefined);
+  }
+  srBox.addEventListener('mousedown',  handleSrTap);
+  srBox.addEventListener('touchstart', handleSrTap, { passive: false });
 });
 </script>
 </body>
