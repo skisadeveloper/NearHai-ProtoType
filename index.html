@@ -510,6 +510,135 @@
     }
     .btn-checkout:active { transform:scale(.98); }
 
+    /* ── CHECKOUT OVERLAY ── */
+    #checkout-overlay {
+      position:absolute; inset:0; z-index:600;
+      background:var(--bg); display:none; flex-direction:column;
+      overflow:hidden;
+    }
+    #checkout-overlay.on {
+      display:flex;
+      animation: coSlideUp .35s var(--ease) both;
+    }
+    @keyframes coSlideUp {
+      from { transform:translateY(100%); }
+      to   { transform:translateY(0); }
+    }
+    .co-page { flex:1; overflow-y:auto; padding-bottom:calc(var(--nav-h) + 80px); }
+    .co-topbar {
+      display:flex; align-items:center; gap:12px;
+      padding:16px 16px 12px; background:white;
+      border-bottom:1px solid #F3F4F6; flex-shrink:0;
+      position:sticky; top:0; z-index:10;
+    }
+    .co-back {
+      width:36px; height:36px; border-radius:50%; background:#F3F4F6;
+      border:none; font-size:20px; cursor:pointer; display:flex;
+      align-items:center; justify-content:center; color:var(--text); flex-shrink:0;
+    }
+    .co-topbar-title { font-size:17px; font-weight:700; }
+    .co-section {
+      background:white; border-radius:18px;
+      margin:12px 14px 0; padding:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,.05);
+    }
+    .co-sec-title {
+      font-size:13px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.5px; color:var(--text-sec); margin-bottom:12px;
+    }
+    /* Delivery type cards */
+    .del-type-row { display:flex; gap:10px; }
+    .del-type-card {
+      flex:1; padding:13px 10px; border-radius:14px;
+      border:2px solid #F3F4F6; cursor:pointer; transition:all .2s;
+      display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center;
+    }
+    .del-type-card.active { border-color:#22C55E; background:#F0FDF4; }
+    .dtc-ico { font-size:26px; }
+    .dtc-name { font-size:13px; font-weight:700; }
+    .dtc-desc { font-size:11px; color:var(--text-sec); line-height:1.3; }
+    .dtc-price { font-size:13px; font-weight:700; color:#22C55E; }
+    /* Time slots in checkout */
+    .co-slots { display:flex; flex-direction:column; gap:7px; margin-top:4px; }
+    .co-slot {
+      padding:11px 13px; border-radius:12px; border:2px solid #F3F4F6;
+      cursor:pointer; font-size:13.5px; font-weight:500; transition:all .18s;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .co-slot.active { border-color:#22C55E; background:#F0FDF4; font-weight:700; }
+    .co-slot-check { font-size:16px; opacity:0; }
+    .co-slot.active .co-slot-check { opacity:1; }
+    /* Address row */
+    .co-address-row {
+      display:flex; align-items:center; gap:11px;
+      padding:11px 13px; border-radius:13px; background:#F9FAFB;
+      border:2px solid #F3F4F6; cursor:pointer; transition:border .18s;
+    }
+    .co-address-row:hover { border-color:#22C55E; }
+    .co-addr-ico { font-size:20px; flex-shrink:0; }
+    .co-addr-text { flex:1; }
+    .co-addr-label { font-size:12px; font-weight:600; color:var(--text-sec); }
+    .co-addr-val { font-size:13.5px; font-weight:600; margin-top:2px; }
+    .co-addr-change { font-size:12px; color:#22C55E; font-weight:600; flex-shrink:0; }
+    /* Price breakdown */
+    .co-price-row {
+      display:flex; justify-content:space-between;
+      font-size:13.5px; padding:5px 0;
+    }
+    .co-price-row.total {
+      border-top:1.5px solid #F3F4F6; margin-top:6px; padding-top:11px;
+      font-size:16px; font-weight:800;
+    }
+    .co-price-row .lbl { color:var(--text-sec); }
+    .co-price-row.total .lbl { color:var(--text); }
+    .co-price-free { color:#22C55E; font-weight:700; }
+    /* Order items summary */
+    .co-order-item {
+      display:flex; align-items:center; gap:11px;
+      padding:8px 0; border-bottom:1px solid #F9FAFB;
+    }
+    .co-order-item:last-child { border-bottom:none; }
+    .co-oi-emoji { font-size:20px; width:32px; text-align:center; }
+    .co-oi-name { flex:1; font-size:13px; font-weight:600; }
+    .co-oi-qty  { font-size:12px; color:var(--text-sec); }
+    .co-oi-price { font-size:13px; font-weight:700; }
+    /* Place order sticky footer */
+    .co-footer {
+      position:absolute; bottom:0; left:0; right:0;
+      padding:12px 16px calc(var(--nav-h) + 10px);
+      background:white; border-top:1px solid #F3F4F6;
+    }
+    .btn-place-order {
+      width:100%; padding:15px; border-radius:14px; border:none;
+      background:#22C55E; color:white; font-family:'DM Sans',sans-serif;
+      font-size:15.5px; font-weight:800; cursor:pointer; transition:transform .15s;
+      box-shadow:0 6px 20px rgba(34,197,94,.35);
+      display:flex; align-items:center; justify-content:center; gap:10px;
+    }
+    .btn-place-order:active { transform:scale(.98); }
+    .btn-place-order:disabled { background:#9CA3AF; box-shadow:none; cursor:not-allowed; }
+    /* Success screen */
+    #checkout-success {
+      position:absolute; inset:0; z-index:700;
+      background:white; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:10px;
+      transform:scale(.9); opacity:0; pointer-events:none;
+      transition:all .38s var(--ease);
+    }
+    #checkout-success.on { transform:scale(1); opacity:1; pointer-events:all; }
+    .cs-icon { font-size:72px; margin-bottom:6px; }
+    .cs-title { font-size:24px; font-weight:800; }
+    .cs-sub { font-size:14px; color:var(--text-sec); text-align:center; padding:0 30px; line-height:1.5; }
+    .cs-detail { background:#F0FDF4; border-radius:14px; padding:14px 20px; width:calc(100% - 60px); margin-top:6px; }
+    .cs-row { display:flex; justify-content:space-between; font-size:13px; padding:4px 0; }
+    .cs-row .l { color:var(--text-sec); }
+    .cs-row .r { font-weight:700; }
+    .btn-done {
+      margin-top:18px; padding:13px 40px; border-radius:13px; border:none;
+      background:#22C55E; color:white; font-family:'DM Sans',sans-serif;
+      font-size:15px; font-weight:700; cursor:pointer;
+    }
+
     /* Add to cart button on product cards */
     .btn-cart {
       padding:5px 10px; border-radius:8px; border:2px solid #1A1A2E;
@@ -1187,6 +1316,58 @@
     </div>
   </div>
 
+  <!-- SCREEN: CART -->
+  <div id="screen-cart" class="screen">
+    <div class="ss" style="padding-bottom:20px">
+      <div class="ss-head" style="display:flex;align-items:center;justify-content:space-between">
+        <span>🛒 My Cart</span>
+        <button id="cart-pg-clear" onclick="clearCart()" style="font-size:12px;color:#EF4444;font-weight:600;background:none;border:none;cursor:pointer;display:none">Clear All</button>
+      </div>
+      <div id="cart-pg-items" style="display:flex;flex-direction:column;gap:10px"></div>
+      <!-- empty state -->
+      <div id="cart-pg-empty" style="display:flex;flex-direction:column;align-items:center;padding:60px 20px;color:var(--text-sec);text-align:center">
+        <div style="font-size:52px;margin-bottom:16px">🛒</div>
+        <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px">Your cart is empty</div>
+        <div style="font-size:13.5px;line-height:1.6">Go to <b>Near → Buy</b> and tap<br><b>+ Cart</b> on any product</div>
+        <button onclick="switchTab('near');setMode('buy')" style="margin-top:22px;padding:12px 26px;border-radius:13px;border:none;background:var(--primary);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Browse Shops →</button>
+      </div>
+      <!-- order summary card -->
+      <div id="cart-pg-summary" style="display:none;margin-top:16px;background:white;border-radius:18px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.07)">
+        <div style="font-size:14px;font-weight:700;margin-bottom:14px">Order Summary</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px" id="cart-pg-breakdown"></div>
+        <div style="height:1px;background:#F3F4F6;margin:14px 0"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+          <span style="font-size:15px;font-weight:700">Total</span>
+          <span style="font-size:22px;font-weight:800" id="cart-pg-total">₹0</span>
+        </div>
+        <!-- delivery type -->
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text-sec)">Delivery Option</div>
+        <div style="display:flex;gap:9px;margin-bottom:18px">
+          <div id="cpd-instant" class="del-card sel" style="flex:1;flex-direction:column;align-items:flex-start;gap:3px" onclick="selCartDel('instant')">
+            <div style="font-size:18px">⚡</div>
+            <div style="font-size:12.5px;font-weight:700">Instant</div>
+            <div style="font-size:11px;color:var(--text-sec)">30–45 min • ₹30</div>
+          </div>
+          <div id="cpd-routine" class="del-card" style="flex:1;flex-direction:column;align-items:flex-start;gap:3px" onclick="selCartDel('routine')">
+            <div style="font-size:18px">📦</div>
+            <div style="font-size:12.5px;font-weight:700">Scheduled</div>
+            <div style="font-size:11px;color:var(--text-sec)">Pick a time • Free</div>
+          </div>
+        </div>
+        <!-- address -->
+        <div style="background:#F9FAFB;border-radius:13px;padding:13px;margin-bottom:18px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">📍</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700">Model Town, Ludhiana</div>
+            <div style="font-size:11.5px;color:var(--text-sec)">House 42, Street 7 — Default address</div>
+          </div>
+          <span style="font-size:12px;color:var(--primary);font-weight:600;cursor:pointer" onclick="toast('📍 Change address coming soon')">Change</span>
+        </div>
+        <button class="btn-checkout" id="cart-pg-order-btn" onclick="checkoutCart(true)">⚡ Place Order →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST -->
 
   <div id="toast"></div>
@@ -1214,8 +1395,114 @@
           <span class="cart-total-label">Total</span>
           <span class="cart-total-amt" id="cart-total">₹0</span>
         </div>
-        <button class="btn-checkout" onclick="checkoutCart()">Proceed to Checkout →</button>
+        <button class="btn-checkout" onclick="openCheckout()">Proceed to Checkout →</button>
       </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT PAGE -->
+  <div id="checkout-overlay">
+    <div class="co-topbar">
+      <button class="co-back" onclick="closeCheckout()">‹</button>
+      <div class="co-topbar-title">Checkout</div>
+    </div>
+    <div class="co-page" id="co-page">
+      <!-- Delivery address -->
+      <div class="co-section">
+        <div class="co-sec-title">📍 Deliver To</div>
+        <div class="co-address-row" onclick="toast('📍 Address selection coming soon')">
+          <div class="co-addr-ico">🏠</div>
+          <div class="co-addr-text">
+            <div class="co-addr-label">Home</div>
+            <div class="co-addr-val">Model Town, Ludhiana, Punjab</div>
+          </div>
+          <span class="co-addr-change">Change</span>
+        </div>
+      </div>
+      <!-- Delivery type -->
+      <div class="co-section">
+        <div class="co-sec-title">🚚 Delivery Type</div>
+        <div class="del-type-row">
+          <div class="del-type-card active" id="dty-instant" onclick="setCoDelivery('instant')">
+            <div class="dtc-ico">⚡</div>
+            <div class="dtc-name">Instant</div>
+            <div class="dtc-desc">30–45 min<br>Rider nearby</div>
+            <div class="dtc-price">+₹30</div>
+          </div>
+          <div class="del-type-card" id="dty-routine" onclick="setCoDelivery('routine')">
+            <div class="dtc-ico">📦</div>
+            <div class="dtc-name">Routine</div>
+            <div class="dtc-desc">Schedule a<br>time window</div>
+            <div class="dtc-price co-price-free">Free</div>
+          </div>
+        </div>
+      </div>
+      <!-- Time slot picker (shown only for routine) -->
+      <div class="co-section" id="co-slot-section" style="display:none">
+        <div class="co-sec-title">🕐 Choose Delivery Window</div>
+        <div class="co-slots">
+          <div class="co-slot active" onclick="setCoSlot(this)">
+            <span>Today Evening &nbsp;•&nbsp; 5:00 – 8:00 PM</span>
+            <span class="co-slot-check">✅</span>
+          </div>
+          <div class="co-slot" onclick="setCoSlot(this)">
+            <span>Today Night &nbsp;•&nbsp; 8:00 – 11:00 PM</span>
+            <span class="co-slot-check">✅</span>
+          </div>
+          <div class="co-slot" onclick="setCoSlot(this)">
+            <span>Tomorrow Morning &nbsp;•&nbsp; 8:00 – 11:00 AM</span>
+            <span class="co-slot-check">✅</span>
+          </div>
+          <div class="co-slot" onclick="setCoSlot(this)">
+            <span>Tomorrow Afternoon &nbsp;•&nbsp; 12:00 – 3:00 PM</span>
+            <span class="co-slot-check">✅</span>
+          </div>
+          <div class="co-slot" onclick="setCoSlot(this)">
+            <span>Tomorrow Evening &nbsp;•&nbsp; 5:00 – 8:00 PM</span>
+            <span class="co-slot-check">✅</span>
+          </div>
+        </div>
+      </div>
+      <!-- Order items -->
+      <div class="co-section">
+        <div class="co-sec-title">🧾 Order Summary</div>
+        <div id="co-order-items"></div>
+      </div>
+      <!-- Price breakdown -->
+      <div class="co-section">
+        <div class="co-sec-title">💰 Bill Details</div>
+        <div class="co-price-row"><span class="lbl">Subtotal</span><span id="co-subtotal">₹0</span></div>
+        <div class="co-price-row"><span class="lbl">Delivery Fee</span><span id="co-delivery-fee">₹30</span></div>
+        <div class="co-price-row"><span class="lbl">Platform Fee</span><span>₹5</span></div>
+        <div class="co-price-row total"><span class="lbl">Total</span><span id="co-grand-total" style="color:#22C55E">₹0</span></div>
+      </div>
+      <!-- Payment method -->
+      <div class="co-section">
+        <div class="co-sec-title">💳 Payment</div>
+        <div class="co-address-row" onclick="toast('💳 Payment options coming soon')">
+          <div class="co-addr-ico">💵</div>
+          <div class="co-addr-text">
+            <div class="co-addr-label">Selected Method</div>
+            <div class="co-addr-val">Cash on Delivery</div>
+          </div>
+          <span class="co-addr-change">Change</span>
+        </div>
+      </div>
+    </div>
+    <!-- Sticky place order button -->
+    <div class="co-footer">
+      <button class="btn-place-order" id="btn-place-order" onclick="placeCheckoutOrder()">
+        <span>✅ Place Order</span>
+        <span id="btn-order-total">₹0</span>
+      </button>
+    </div>
+    <!-- Success screen -->
+    <div id="checkout-success">
+      <div class="cs-icon">🎉</div>
+      <div class="cs-title">Order Placed!</div>
+      <div class="cs-sub" id="cs-sub">Your order is confirmed and will be delivered soon.</div>
+      <div class="cs-detail" id="cs-detail"></div>
+      <button class="btn-done" onclick="finishCheckout()">Back to NearHai</button>
     </div>
   </div>
 
@@ -1228,6 +1515,13 @@
     <button class="nav-btn near-btn active" data-tab="near" onclick="switchTab('near')">
       <span class="nav-ico">📍</span>
       <span class="nav-lbl">Near</span>
+    </button>
+    <button class="nav-btn" onclick="openCart()">
+      <span class="nav-ico-wrap">
+        <span class="nav-ico">🛒</span>
+        <span class="nav-badge" id="cart-nav-badge" style="display:none;">0</span>
+      </span>
+      <span class="nav-lbl">Cart</span>
     </button>
     <button class="nav-btn" data-tab="activity" onclick="switchTab('activity')">
       <span class="nav-ico-wrap">
@@ -2052,8 +2346,9 @@ function sheetEmergency(e) {
 function switchTab(tab) {
   S.tab = tab;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(`screen-${tab}`).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  const scr = document.getElementById(`screen-${tab}`);
+  if (scr) scr.classList.add('active');
+  document.querySelectorAll('.nav-btn[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   if (tab==='activity') { S.newActs=0; document.getElementById('act-badge').style.display='none'; }
 }
 
@@ -2514,8 +2809,10 @@ function updateCartFab() {
   document.getElementById('cart-fab-count').textContent = count;
   document.getElementById('cart-fab-label').textContent = count === 1 ? `Cart • ₹${total}` : `Cart (${count}) • ₹${total}`;
   fab.classList.toggle('visible', count > 0);
-  // shift above mode panel if mode panel is showing
   fab.classList.toggle('shifted', document.getElementById('mode-panel').classList.contains('visible'));
+  // sync nav badge
+  const nb = document.getElementById('cart-nav-badge');
+  if (nb) { nb.textContent = count; nb.style.display = count > 0 ? 'flex' : 'none'; }
 }
 
 function openCart() {
@@ -2586,14 +2883,102 @@ function renderCartSheet() {
   footer.style.display = 'block';
 }
 
-function checkoutCart() {
-  if (!CART.length) return;
-  const total = CART.reduce((s,c)=>s+c.price*c.qty, 0);
-  const items = CART.map(c=>`${c.prodName} ×${c.qty}`).join(', ');
+let CO_DELIVERY = 'instant';   // 'instant' | 'routine'
+let CO_SLOT     = 'Today Evening • 5:00 – 8:00 PM';
+
+function openCheckout() {
   closeCart();
-  toast(`✅ Order placed! ${items} — ₹${total}`);
+  CO_DELIVERY = 'instant';
+  CO_SLOT     = 'Today Evening • 5:00 – 8:00 PM';
+  renderCheckoutPage();
+  document.getElementById('checkout-overlay').classList.add('on');
+  document.getElementById('checkout-success').classList.remove('on');
+}
+
+function closeCheckout() {
+  document.getElementById('checkout-overlay').classList.remove('on');
+}
+
+function setCoDelivery(type) {
+  CO_DELIVERY = type;
+  document.getElementById('dty-instant').classList.toggle('active', type==='instant');
+  document.getElementById('dty-routine').classList.toggle('active', type==='routine');
+  document.getElementById('co-slot-section').style.display = type==='routine' ? 'block' : 'none';
+  updateCoBill();
+}
+
+function setCoSlot(el) {
+  document.querySelectorAll('.co-slot').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  CO_SLOT = el.querySelector('span').textContent.trim();
+}
+
+function updateCoBill() {
+  const subtotal    = CART.reduce((s,c)=>s+c.price*c.qty, 0);
+  const deliveryFee = CO_DELIVERY==='instant' ? 30 : 0;
+  const platform    = 5;
+  const grand       = subtotal + deliveryFee + platform;
+  document.getElementById('co-subtotal').textContent      = `₹${subtotal}`;
+  document.getElementById('co-delivery-fee').textContent  = CO_DELIVERY==='instant' ? '₹30' : '<span class="co-price-free">Free</span>';
+  document.getElementById('co-delivery-fee').innerHTML    = CO_DELIVERY==='instant' ? '₹30' : '<span style="color:#22C55E;font-weight:700">Free</span>';
+  document.getElementById('co-grand-total').textContent   = `₹${grand}`;
+  document.getElementById('btn-order-total').textContent  = `₹${grand}`;
+}
+
+function renderCheckoutPage() {
+  // Order items
+  document.getElementById('co-order-items').innerHTML = CART.map(c=>`
+    <div class="co-order-item">
+      <div class="co-oi-emoji">${c.prodEmoji}</div>
+      <div class="co-oi-name">${c.prodName}<br><span style="font-size:11px;color:var(--text-sec);font-weight:400">${c.shopEmoji} ${c.shopName}</span></div>
+      <div class="co-oi-qty">×${c.qty}</div>
+      <div class="co-oi-price">₹${c.price*c.qty}</div>
+    </div>`).join('');
+  // Reset delivery type UI
+  document.getElementById('dty-instant').classList.add('active');
+  document.getElementById('dty-routine').classList.remove('active');
+  document.getElementById('co-slot-section').style.display = 'none';
+  document.querySelectorAll('.co-slot').forEach((s,i)=>s.classList.toggle('active',i===0));
+  updateCoBill();
+}
+
+function placeCheckoutOrder() {
+  if (!CART.length) return;
+  const subtotal    = CART.reduce((s,c)=>s+c.price*c.qty, 0);
+  const deliveryFee = CO_DELIVERY==='instant' ? 30 : 0;
+  const grand       = subtotal + deliveryFee + 5;
+  const itemCount   = CART.reduce((s,c)=>s+c.qty, 0);
+
+  // Build success detail
+  const typeLabel  = CO_DELIVERY==='instant' ? '⚡ Instant (30–45 min)' : `📦 ${CO_SLOT}`;
+  const itemNames  = CART.map(c=>`${c.prodName} ×${c.qty}`).join(', ');
+  document.getElementById('cs-sub').textContent =
+    CO_DELIVERY==='instant'
+      ? 'Your rider is being assigned. Delivery in 30–45 minutes!'
+      : `Scheduled: ${CO_SLOT}. We'll notify you before dispatch.`;
+  document.getElementById('cs-detail').innerHTML = `
+    <div class="cs-row"><span class="l">Items</span><span class="r">${itemCount} item${itemCount>1?'s':''}</span></div>
+    <div class="cs-row"><span class="l">Delivery</span><span class="r">${typeLabel}</span></div>
+    <div class="cs-row"><span class="l">Address</span><span class="r">Model Town, Ludhiana</span></div>
+    <div class="cs-row"><span class="l">Payment</span><span class="r">Cash on Delivery</span></div>
+    <div class="cs-row" style="border-top:1px solid #BBF7D0;margin-top:6px;padding-top:8px"><span class="l" style="font-weight:700">Total Paid</span><span class="r" style="color:#22C55E;font-size:16px">₹${grand}</span></div>`;
+
+  // Log to activity
+  addAct({ icon:'📦', bg:'#DCFCE7', title:`${itemNames} — ${CO_DELIVERY==='instant'?'Instant':'Scheduled'} Delivery`, meta:`Order #NH${Date.now().toString().slice(-5)} • Just now`, stat:'s-done', statTxt: CO_DELIVERY==='instant'?'Confirmed':'Scheduled' });
+
+  // Show success
+  document.getElementById('checkout-success').classList.add('on');
+  document.getElementById('co-page').scrollTop = 0;
+
+  // Clear cart
   CART.length = 0;
   updateCartFab();
+}
+
+function finishCheckout() {
+  document.getElementById('checkout-success').classList.remove('on');
+  closeCheckout();
+  switchTab('near');
 }
 
 /* ─── UTILITIES ─── */
