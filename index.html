@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NearHai – Your Local Super App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #3A5BFF;
+      --primary-glow: rgba(58,91,255,0.3);
+      --bg: #F6F7FB;
+      --card: #FFFFFF;
+      --text: #1A1A2E;
+      --text-sec: #6B7280;
+      --accent: #22C55E;
+      --accent-rgb: 34,197,94;
+      --shadow: 0 4px 20px rgba(0,0,0,0.10);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.18);
+      --radius: 16px;
+      --nav-h: 70px;
+      --ease: cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    body.mode-buy    { --accent:#22C55E; --accent-rgb:34,197,94; }
+    body.mode-travel { --accent:#F97316; --accent-rgb:249,115,22; }
+    body.mode-services { --accent:#8B5CF6; --accent-rgb:139,92,246; }
+    body.mode-explore  { --accent:#06B6D4; --accent-rgb:6,182,212; }
+    body.mode-emergency{ --accent:#EF4444; --accent-rgb:239,68,68; }
+
+    html, body { height:100%; width:100%; overflow:hidden; font-family:'DM Sans',sans-serif; background:#dde1ea; }
+
+    #app {
+      position:relative; width:100%; max-width:430px; height:100%;
+      margin:0 auto; background:var(--bg); overflow:hidden;
+      box-shadow: 0 0 80px rgba(0,0,0,0.25);
+    }
+
+    /* ── SCREENS ── */
+    .screen { position:absolute; inset:0; bottom:var(--nav-h); opacity:0; pointer-events:none; transition:opacity .28s; }
+    .screen.active { opacity:1; pointer-events:all; }
+
+    /* ── MAP ── */
+    #map { position:absolute; inset:0; z-index:1; }
+    .leaflet-bottom.leaflet-right { bottom:calc(var(--nav-h) + 12px) !important; right:12px !important; }
+    .leaflet-control-zoom { border:none !important; box-shadow:var(--shadow) !important; }
+    .leaflet-control-zoom a {
+      border-radius:10px !important; margin-bottom:4px !important;
+      width:36px !important; height:36px !important; line-height:36px !important;
+      color:var(--text) !important; font-weight:700 !important; font-size:18px !important;
+    }
+    .leaflet-control-attribution { font-size:9px !important; }
+
+    /* ── TOP OVERLAY ── */
+    .top-overlay {
+      position:absolute; top:0; left:0; right:0; z-index:100;
+      padding:14px 14px 8px;
+      background:linear-gradient(180deg, rgba(246,247,251,.97) 65%, transparent);
+      backdrop-filter:blur(6px);
+    }
+    .search-bar {
+      display:flex; align-items:center; gap:10px;
+      background:white; border-radius:14px; padding:11px 14px;
+      box-shadow:var(--shadow);
+    }
+    .search-bar-icon { font-size:17px; flex-shrink:0; }
+    .search-bar input {
+      flex:1; border:none; outline:none; font-family:'DM Sans',sans-serif;
+      font-size:14px; color:var(--text); background:transparent;
+    }
+    .search-bar input::placeholder { color:var(--text-sec); }
+    .search-avatar {
+      width:30px; height:30px; border-radius:50%; background:var(--primary);
+      display:flex; align-items:center; justify-content:center;
+      font-size:12px; color:white; font-weight:700; flex-shrink:0;
+    }
+    .intent-pills {
+      display:flex; gap:7px; margin-top:9px; overflow-x:auto;
+      scrollbar-width:none; padding-bottom:2px;
+    }
+    .intent-pills::-webkit-scrollbar { display:none; }
+    .pill {
+      display:flex; align-items:center; gap:5px; padding:7px 13px;
+      border-radius:20px; border:2px solid transparent; background:white;
+      font-family:'DM Sans',sans-serif; font-size:12.5px; font-weight:500;
+      white-space:nowrap; cursor:pointer; transition:all .2s;
+      box-shadow:0 2px 8px rgba(0,0,0,0.07);
+    }
+    .pill.active { background:var(--accent); color:white; border-color:var(--accent); box-shadow:0 4px 14px rgba(var(--accent-rgb),.35); }
+    .pill:not(.active):hover { border-color:var(--accent); color:var(--accent); }
+
+    /* ── FAB ── */
+    .fab-locate {
+      position:absolute; bottom:calc(var(--nav-h) + 90px); right:14px; z-index:100;
+      width:44px; height:44px; border-radius:50%; background:white; border:none;
+      box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center;
+      font-size:19px; cursor:pointer; transition:transform .15s;
+    }
+    .fab-locate:active { transform:scale(.92); }
+
+    /* ── BOTTOM SHEET ── */
+    .bs-backdrop {
+      position:absolute; inset:0; background:rgba(0,0,0,.32); z-index:200;
+      opacity:0; pointer-events:none; transition:opacity .3s;
+    }
+    .bs-backdrop.on { opacity:1; pointer-events:all; }
+
+    .bottom-sheet {
+      position:absolute; bottom:0; left:0; right:0; z-index:300;
+      background:white; border-radius:22px 22px 0 0;
+      box-shadow:0 -8px 40px rgba(0,0,0,.18);
+      transform:translateY(100%);
+      transition:transform .42s var(--ease);
+      max-height:82vh; display:flex; flex-direction:column;
+    }
+    .bottom-sheet.open { transform:translateY(0); }
+    .bs-handle { width:38px; height:4px; background:#E5E7EB; border-radius:2px; margin:12px auto 0; flex-shrink:0; }
+    .bs-content { padding:14px 18px 24px; overflow-y:auto; flex:1; overscroll-behavior:contain; }
+
+    /* BS components */
+    .bs-header { display:flex; align-items:flex-start; gap:13px; margin-bottom:14px; }
+    .bs-emoji {
+      width:50px; height:50px; border-radius:14px; background:var(--bg);
+      display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0;
+    }
+    .bs-name { font-size:17px; font-weight:700; margin-bottom:6px; }
+    .bs-metas { display:flex; flex-wrap:wrap; gap:5px; }
+    .badge { padding:3px 8px; border-radius:7px; background:var(--bg); font-size:11.5px; font-weight:500; color:var(--text-sec); }
+    .badge-ok { background:#DCFCE7; color:#16A34A; }
+    .badge-busy { background:#FEE2E2; color:#DC2626; }
+
+    .sec-title { font-size:14px; font-weight:600; margin:13px 0 9px; }
+    .divider { height:1px; background:#F3F4F6; margin:13px 0; }
+
+    /* Products */
+    .product-list { display:flex; flex-direction:column; gap:9px; }
+    .product-card {
+      display:flex; align-items:center; gap:11px; padding:11px 13px;
+      border-radius:13px; border:2px solid #F3F4F6; cursor:pointer; transition:all .2s;
+    }
+    .product-card.sel { border-color:var(--accent); background:rgba(var(--accent-rgb),.05); }
+    .prod-emoji { width:42px; height:42px; border-radius:11px; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:22px; }
+    .prod-info { flex:1; }
+    .prod-name { font-size:13.5px; font-weight:600; }
+    .prod-price { font-size:14.5px; font-weight:700; color:var(--accent); margin-top:2px; }
+    .btn-sel {
+      padding:5px 11px; border-radius:8px; border:2px solid var(--accent);
+      background:transparent; color:var(--accent); font-family:'DM Sans',sans-serif;
+      font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; white-space:nowrap;
+    }
+    .btn-sel.on { background:var(--accent); color:white; }
+
+    /* Delivery section */
+    .del-opts { display:flex; flex-direction:column; gap:9px; }
+    .del-card {
+      display:flex; align-items:center; gap:11px; padding:13px;
+      border-radius:13px; border:2px solid #F3F4F6; cursor:pointer; transition:all .2s;
+    }
+    .del-card.sel { border-color:var(--accent); background:rgba(var(--accent-rgb),.05); }
+    .del-icon { width:42px; height:42px; border-radius:11px; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:20px; }
+    .del-info { flex:1; }
+    .del-name { font-size:13.5px; font-weight:600; }
+    .del-desc { font-size:11.5px; color:var(--text-sec); margin-top:2px; }
+    .del-price { font-size:13px; font-weight:700; color:var(--text-sec); }
+
+    /* Buttons */
+    .btn-p {
+      width:100%; padding:13px; border-radius:13px; border:none;
+      background:var(--accent); color:white; font-family:'DM Sans',sans-serif;
+      font-size:14.5px; font-weight:600; cursor:pointer; transition:all .2s;
+      box-shadow:0 4px 16px rgba(var(--accent-rgb),.3); margin-bottom:9px;
+    }
+    .btn-p:active { transform:scale(.98); }
+    .btn-s {
+      width:100%; padding:13px; border-radius:13px; border:2px solid var(--accent);
+      background:transparent; color:var(--accent); font-family:'DM Sans',sans-serif;
+      font-size:14.5px; font-weight:600; cursor:pointer; transition:all .2s;
+    }
+
+    /* Driver card */
+    .driver-card {
+      display:flex; align-items:center; gap:13px; padding:14px;
+      border-radius:15px; background:var(--bg); margin-bottom:13px;
+    }
+    .drv-avatar {
+      width:50px; height:50px; border-radius:50%; background:var(--accent);
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; color:white; font-weight:700;
+    }
+    .drv-name { font-size:15px; font-weight:700; }
+    .drv-meta { font-size:12px; color:var(--text-sec); margin-top:3px; }
+    .drv-rating { font-size:13px; font-weight:600; color:#F59E0B; margin-top:3px; }
+
+    /* Route */
+    .route-box { background:var(--bg); border-radius:13px; padding:13px; margin-bottom:13px; }
+    .route-row { display:flex; align-items:center; gap:9px; font-size:13.5px; }
+    .rdot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .rline { width:2px; height:18px; background:#D1D5DB; margin-left:3px; }
+
+    /* Professional */
+    .pro-card { padding:15px; border-radius:15px; background:var(--bg); margin-bottom:13px; }
+    .pro-head { display:flex; align-items:center; gap:13px; margin-bottom:11px; }
+    .pro-av {
+      width:50px; height:50px; border-radius:13px; background:var(--accent);
+      display:flex; align-items:center; justify-content:center; font-size:22px;
+    }
+    .tags { display:flex; flex-wrap:wrap; gap:6px; }
+    .tag { padding:4px 9px; border-radius:7px; background:white; font-size:11.5px; color:var(--text-sec); }
+
+    /* Event */
+    .event-card { border-radius:15px; background:var(--bg); overflow:hidden; margin-bottom:13px; }
+    .event-banner { height:70px; display:flex; align-items:center; justify-content:center; font-size:38px; }
+    .event-body { padding:13px; }
+    .event-time { font-size:12px; color:var(--text-sec); margin-bottom:5px; }
+    .event-desc { font-size:12.5px; color:var(--text-sec); margin-top:7px; line-height:1.5; }
+
+    /* Emergency */
+    .em-card { padding:14px; border-radius:15px; background:#FEF2F2; border:2px solid #FECACA; margin-bottom:13px; }
+    .em-type { font-size:11px; font-weight:700; color:#DC2626; text-transform:uppercase; letter-spacing:.6px; margin-bottom:5px; }
+    .em-name { font-size:19px; font-weight:700; }
+    .em-detail { font-size:12.5px; color:#6B7280; margin-top:4px; }
+    .btn-em {
+      flex:1; padding:13px; border-radius:13px; border:none; background:#EF4444;
+      color:white; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:700;
+      cursor:pointer; box-shadow:0 4px 16px rgba(239,68,68,.3);
+    }
+
+    /* ── DELIVERY OVERLAY ── */
+    #delivery-overlay {
+      position:absolute; inset:0; z-index:400; pointer-events:none;
+      opacity:0; transition:opacity .3s; display:flex; flex-direction:column; justify-content:flex-end;
+    }
+    #delivery-overlay.on { opacity:1; pointer-events:all; }
+    .del-panel {
+      background:white; border-radius:22px 22px 0 0;
+      box-shadow:0 -8px 40px rgba(0,0,0,.18);
+      padding:18px 18px calc(var(--nav-h) + 16px);
+      max-height:60vh; overflow-y:auto;
+    }
+    .del-panel-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    .del-panel-title { font-size:16px; font-weight:700; }
+    .del-close {
+      width:30px; height:30px; border-radius:50%; border:none; background:var(--bg);
+      cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px;
+    }
+    .track-steps { display:flex; flex-direction:column; }
+    .t-step { display:flex; align-items:flex-start; gap:13px; padding-bottom:18px; position:relative; }
+    .t-step:not(:last-child)::after {
+      content:''; position:absolute; left:14px; top:30px; bottom:0;
+      width:2px; background:#E5E7EB; transition:background .5s;
+    }
+    .t-step.done:not(:last-child)::after { background:var(--accent); }
+    .t-dot {
+      width:28px; height:28px; border-radius:50%; border:2px solid #E5E7EB;
+      background:white; display:flex; align-items:center; justify-content:center;
+      font-size:12px; flex-shrink:0; transition:all .4s;
+    }
+    .t-step.done .t-dot { background:var(--accent); border-color:var(--accent); color:white; }
+    .t-step.curr .t-dot { border-color:var(--accent); animation:dotPulse 1.2s infinite; }
+    @keyframes dotPulse {
+      0%,100%{ box-shadow:0 0 0 0 rgba(var(--accent-rgb),.4); }
+      50%{ box-shadow:0 0 0 6px rgba(var(--accent-rgb),0); }
+    }
+    .t-name { font-size:13.5px; font-weight:600; padding-top:5px; }
+    .t-desc { font-size:11.5px; color:var(--text-sec); margin-top:2px; }
+    .rider-card {
+      display:flex; align-items:center; gap:11px; padding:13px; border-radius:14px;
+      background:var(--bg); margin-top:14px;
+    }
+    .rider-av { width:42px; height:42px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:19px; }
+    .rider-inf { flex:1; }
+    .rider-nm { font-size:13.5px; font-weight:600; }
+    .rider-veh { font-size:11.5px; color:var(--text-sec); }
+    .btn-call { padding:8px 14px; border-radius:9px; border:none; background:var(--accent); color:white; font-size:12px; font-weight:600; cursor:pointer; }
+
+    /* ── SCHEDULE MODAL ── */
+    #sched-modal {
+      position:absolute; inset:0; background:rgba(0,0,0,.45); z-index:450;
+      display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .3s;
+    }
+    #sched-modal.on { opacity:1; pointer-events:all; }
+    .modal-sheet { background:white; border-radius:22px 22px 0 0; padding:22px 18px 32px; width:100%; }
+    .modal-title { font-size:17px; font-weight:700; margin-bottom:18px; }
+    .time-slots { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .t-slot {
+      padding:7px 13px; border-radius:9px; border:2px solid #E5E7EB;
+      font-size:12.5px; font-weight:500; cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif;
+    }
+    .t-slot.on { border-color:var(--accent); background:var(--accent); color:white; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position:absolute; bottom:0; left:0; right:0; height:var(--nav-h);
+      background:white; border-top:1px solid #F3F4F6;
+      display:flex; z-index:500; box-shadow:0 -4px 20px rgba(0,0,0,.05);
+    }
+    .nav-btn {
+      flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:4px; cursor:pointer; border:none; background:transparent;
+      font-family:'DM Sans',sans-serif; transition:all .2s; padding:0;
+    }
+    .nav-ico { font-size:22px; transition:transform .2s; }
+    .nav-lbl { font-size:10.5px; font-weight:500; color:var(--text-sec); transition:color .2s; }
+    .nav-btn.active .nav-lbl { color:var(--primary); font-weight:700; }
+    .nav-btn.active .nav-ico { transform:scale(1.12); }
+    .nav-btn.near-btn .nav-ico {
+      width:46px; height:46px; border-radius:15px; background:var(--primary);
+      display:flex; align-items:center; justify-content:center; color:white; font-size:21px;
+    }
+    .nav-btn.near-btn.active .nav-ico { box-shadow:0 4px 16px rgba(58,91,255,.4); }
+    .nav-badge {
+      position:absolute; top:-3px; right:-3px; width:16px; height:16px;
+      border-radius:50%; background:#EF4444; color:white; font-size:9px; font-weight:700;
+      display:flex; align-items:center; justify-content:center; border:2px solid white;
+    }
+    .nav-ico-wrap { position:relative; display:inline-block; }
+
+    /* ── MAP MARKERS ── */
+    .mm {
+      width:38px; height:38px; border-radius:50% 50% 50% 0; transform:rotate(-45deg);
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 14px rgba(0,0,0,.28); cursor:pointer;
+    }
+    .mm span { transform:rotate(45deg); font-size:17px; display:block; }
+    .user-wrap { position:relative; width:22px; height:22px; }
+    .u-pulse { position:absolute; inset:-9px; border-radius:50%; background:rgba(58,91,255,.2); animation:uPulse 2s infinite; }
+    .u-dot { width:16px; height:16px; border-radius:50%; background:#3A5BFF; border:3px solid white; box-shadow:0 2px 8px rgba(58,91,255,.5); position:absolute; top:3px; left:3px; }
+    @keyframes uPulse { 0%,100%{transform:scale(1);opacity:.5;} 50%{transform:scale(1.4);opacity:.15;} }
+    .rider-ico { width:34px; height:34px; border-radius:50%; background:#3A5BFF; display:flex; align-items:center; justify-content:center; font-size:17px; box-shadow:0 4px 12px rgba(58,91,255,.5); border:2px solid white; animation:rPulse 1s infinite; }
+    @keyframes rPulse { 0%,100%{box-shadow:0 4px 12px rgba(58,91,255,.5);} 50%{box-shadow:0 4px 22px rgba(58,91,255,.8);} }
+
+    /* ── SIMPLE SCREENS ── */
+    .ss { padding:14px; overflow-y:auto; height:100%; background:var(--bg); }
+    .ss-head { padding:38px 4px 18px; font-size:22px; font-weight:700; }
+
+    /* Explore grid */
+    .ex-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+    .ex-card {
+      padding:18px 14px; border-radius:15px; display:flex; flex-direction:column; gap:7px;
+      cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.06); transition:transform .15s;
+    }
+    .ex-card:active { transform:scale(.97); }
+    .ex-ic { font-size:30px; }
+    .ex-nm { font-size:14.5px; font-weight:600; }
+    .ex-cnt { font-size:11.5px; color:var(--text-sec); }
+
+    /* Activity */
+    .act-list { display:flex; flex-direction:column; gap:11px; }
+    .act-item {
+      display:flex; align-items:center; gap:13px; padding:13px;
+      border-radius:15px; background:white; box-shadow:0 2px 8px rgba(0,0,0,.06);
+    }
+    .act-ico { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+    .act-inf { flex:1; min-width:0; }
+    .act-title { font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .act-meta { font-size:11.5px; color:var(--text-sec); margin-top:3px; }
+    .act-stat { font-size:11px; font-weight:600; padding:4px 9px; border-radius:7px; white-space:nowrap; }
+    .s-done { background:#DCFCE7; color:#16A34A; }
+    .s-sched { background:#EFF6FF; color:#2563EB; }
+    .s-book { background:#F5F3FF; color:#7C3AED; }
+
+    /* Profile */
+    .prof-hd { display:flex; flex-direction:column; align-items:center; padding:38px 0 22px; }
+    .prof-av {
+      width:76px; height:76px; border-radius:50%; background:var(--primary);
+      display:flex; align-items:center; justify-content:center;
+      font-size:30px; color:white; font-weight:700; margin-bottom:11px;
+      box-shadow:0 8px 24px rgba(58,91,255,.35);
+    }
+    .prof-nm { font-size:21px; font-weight:700; }
+    .prof-loc { font-size:13px; color:var(--text-sec); margin-top:4px; }
+    .prof-stats { display:flex; gap:1px; background:#E5E7EB; border-radius:15px; overflow:hidden; margin:18px 0; }
+    .stat-b { flex:1; padding:14px 8px; background:white; text-align:center; }
+    .stat-n { font-size:20px; font-weight:700; color:var(--primary); }
+    .stat-l { font-size:11px; color:var(--text-sec); margin-top:2px; }
+    .pmenu { display:flex; flex-direction:column; gap:2px; }
+    .pmenu-item {
+      display:flex; align-items:center; gap:13px; padding:15px 13px;
+      border-radius:13px; background:white; cursor:pointer;
+      font-size:14px; font-weight:500; transition:background .15s;
+    }
+    .pmenu-item:hover { background:#F9FAFB; }
+    .pmi-ic { font-size:19px; width:22px; text-align:center; }
+    .pmi-arr { margin-left:auto; color:var(--text-sec); }
+
+    /* ── TOAST ── */
+    #toast {
+      position:absolute; top:98px; left:50%; transform:translateX(-50%) translateY(-16px);
+      background:#1A1A2E; color:white; padding:11px 18px; border-radius:11px;
+      font-size:13.5px; font-weight:500; opacity:0; pointer-events:none;
+      transition:all .3s; white-space:nowrap; z-index:700;
+      box-shadow:0 8px 24px rgba(0,0,0,.28);
+    }
+    #toast.on { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── SPLASH ── */
+    #splash {
+      position:absolute; inset:0; z-index:900; background:var(--primary);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+      transition:opacity .5s, transform .5s;
+    }
+    #splash.gone { opacity:0; pointer-events:none; transform:scale(1.04); }
+    .splash-logo { font-size:52px; }
+    .splash-name { font-size:32px; font-weight:700; color:white; letter-spacing:-1px; }
+    .splash-tag { font-size:14px; color:rgba(255,255,255,.7); font-weight:400; }
+    .splash-dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.4); animation:sdot .9s infinite; }
+    .splash-dots { display:flex; gap:6px; margin-top:16px; }
+    .splash-dot:nth-child(2){ animation-delay:.15s; }
+    .splash-dot:nth-child(3){ animation-delay:.3s; }
+    @keyframes sdot{ 0%,100%{background:rgba(255,255,255,.3);transform:scale(1);} 50%{background:white;transform:scale(1.3);} }
+
+    /* ══ NEARWORLD SOCIAL FEED ══ */
+    .nw-wrap { position:relative; height:100%; display:flex; flex-direction:column; background:var(--bg); }
+
+    /* Header */
+    .nw-header {
+      flex-shrink:0; background:rgba(246,247,251,.96); backdrop-filter:blur(10px);
+      border-bottom:1px solid #E5E7EB; z-index:10; padding-top:46px;
+    }
+    .nw-header-top { display:flex; align-items:center; justify-content:space-between; padding:0 16px 10px; }
+    .nw-logo { font-size:17px; font-weight:800; color:var(--primary); letter-spacing:-.5px; }
+    .nw-head-right { display:flex; align-items:center; gap:10px; }
+    .nw-icon-btn { background:none; border:none; font-size:19px; cursor:pointer; padding:4px; }
+    .nw-self-av {
+      width:32px; height:32px; border-radius:50%; background:var(--primary);
+      display:flex; align-items:center; justify-content:center;
+      font-size:12px; color:white; font-weight:700; cursor:pointer; flex-shrink:0;
+    }
+    .nw-self-av.sm { width:36px; height:36px; font-size:13px; flex-shrink:0; }
+
+    /* Tabs */
+    .nw-tabs { display:flex; border-bottom:none; }
+    .nw-tab {
+      flex:1; padding:11px 8px; background:none; border:none; border-bottom:3px solid transparent;
+      font-family:'DM Sans',sans-serif; font-size:13.5px; font-weight:500; color:var(--text-sec);
+      cursor:pointer; transition:all .2s;
+    }
+    .nw-tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:700; }
+
+    /* Body scroll */
+    .nw-body { flex:1; overflow-y:auto; overscroll-behavior:contain; }
+
+    /* ── Stories ── */
+    .stories-row {
+      display:flex; gap:12px; padding:14px 14px 10px; overflow-x:auto;
+      scrollbar-width:none; border-bottom:1px solid #F3F4F6;
+    }
+    .stories-row::-webkit-scrollbar { display:none; }
+    .story-item { display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; flex-shrink:0; }
+    .story-ring {
+      width:52px; height:52px; border-radius:50%; padding:2.5px;
+      background:linear-gradient(135deg,#F97316,#EF4444,#8B5CF6);
+    }
+    .story-ring.seen { background:#E5E7EB; }
+    .story-inner {
+      width:100%; height:100%; border-radius:50%; background:white;
+      display:flex; align-items:center; justify-content:center;
+      font-size:19px; border:2px solid white;
+    }
+    .story-own { background:var(--primary); color:white; font-size:18px; font-weight:700; }
+    .story-name { font-size:10.5px; color:var(--text-sec); max-width:54px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .story-add-ring { width:52px; height:52px; border-radius:50%; background:var(--bg); border:2.5px dashed #D1D5DB; display:flex; align-items:center; justify-content:center; font-size:20px; }
+
+    /* ── Composer ── */
+    .composer-card {
+      display:flex; gap:11px; padding:13px 14px 10px; background:white;
+      border-bottom:1px solid #F3F4F6;
+    }
+    .composer-inp {
+      flex:1; min-height:38px; font-family:'DM Sans',sans-serif; font-size:14.5px;
+      color:var(--text); outline:none; line-height:1.5; position:relative;
+    }
+    .composer-inp:empty::before { content:attr(data-placeholder); color:#9CA3AF; pointer-events:none; }
+    .composer-bar {
+      background:white; border-bottom:1px solid #F3F4F6;
+      padding:8px 14px; display:flex; align-items:center; justify-content:space-between;
+    }
+    .composer-tools { display:flex; gap:4px; }
+    .c-tool { background:none; border:none; font-size:18px; padding:5px; cursor:pointer; border-radius:8px; transition:background .15s; }
+    .c-tool:hover { background:var(--bg); }
+    .post-btn {
+      padding:7px 18px; background:var(--primary); color:white; border:none;
+      border-radius:20px; font-family:'DM Sans',sans-serif; font-size:13.5px; font-weight:700;
+      cursor:pointer; transition:opacity .2s;
+    }
+    .post-btn:hover { opacity:.88; }
+
+    /* ── Post card ── */
+    .post-card {
+      background:white; border-bottom:1px solid #F3F4F6; padding:14px;
+      cursor:pointer; transition:background .12s; animation:postIn .3s both;
+    }
+    .post-card:hover { background:#FAFAFA; }
+    @keyframes postIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
+    .pc-top { display:flex; gap:11px; }
+    .pc-avatar {
+      width:42px; height:42px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; font-weight:700; color:white; position:relative;
+    }
+    .verified-badge {
+      position:absolute; bottom:-1px; right:-1px;
+      width:15px; height:15px; border-radius:50%; background:var(--primary);
+      display:flex; align-items:center; justify-content:center;
+      font-size:8px; border:1.5px solid white;
+    }
+    .pc-main { flex:1; min-width:0; }
+    .pc-meta { display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-bottom:5px; }
+    .pc-name { font-size:14px; font-weight:700; }
+    .pc-handle { font-size:12px; color:var(--text-sec); }
+    .pc-dot { color:#D1D5DB; font-size:10px; }
+    .pc-time { font-size:12px; color:var(--text-sec); }
+    .pc-moreBtn { margin-left:auto; background:none; border:none; font-size:18px; color:var(--text-sec); cursor:pointer; padding:0 4px; line-height:1; }
+    .pc-body { font-size:14px; line-height:1.55; color:var(--text); margin-bottom:9px; }
+    .pc-body a, .pc-hashtag { color:var(--primary); font-weight:500; }
+
+    /* location tag */
+    .pc-loc { display:inline-flex; align-items:center; gap:4px; font-size:11.5px; color:var(--primary); background:#EEF2FF; padding:3px 8px; border-radius:6px; margin-bottom:9px; font-weight:500; }
+
+    /* media */
+    .pc-media { border-radius:13px; overflow:hidden; margin-bottom:10px; background:var(--bg); min-height:100px; display:flex; align-items:center; justify-content:center; font-size:40px; border:1px solid #F3F4F6; }
+    .pc-media-inner { width:100%; padding:24px 0; text-align:center; }
+    .pc-media-label { font-size:12px; color:var(--text-sec); margin-top:6px; }
+    .pc-img-real { width:100%; display:block; border-radius:13px; max-height:220px; object-fit:cover; }
+
+    /* category label band */
+    .pc-cat-band { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-bottom:9px; text-transform:uppercase; letter-spacing:.4px; }
+
+    /* hashtags */
+    .pc-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
+    .pc-tag { padding:3px 9px; background:#EEF2FF; color:var(--primary); border-radius:20px; font-size:11.5px; font-weight:500; }
+
+    /* actions */
+    .pc-actions { display:flex; align-items:center; gap:0; margin-top:3px; }
+    .pc-act {
+      display:flex; align-items:center; gap:5px; flex:1; padding:7px 0;
+      background:none; border:none; font-family:'DM Sans',sans-serif; font-size:12.5px;
+      color:var(--text-sec); cursor:pointer; border-radius:8px; transition:all .15s;
+      justify-content:center;
+    }
+    .pc-act:hover { background:var(--bg); }
+    .pc-act.liked { color:#EF4444; }
+    .pc-act.reposted { color:#22C55E; }
+    .pc-act-ico { font-size:16px; }
+    .pc-act-n { font-size:12px; font-weight:500; }
+
+    /* repost tag */
+    .pc-repost-hdr { display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--text-sec); margin-bottom:8px; padding-left:2px; }
+
+    /* quote card (nested post) */
+    .quote-card { border:1.5px solid #E5E7EB; border-radius:12px; padding:11px 13px; margin-bottom:10px; background:#FAFAFA; }
+    .quote-meta { font-size:12px; color:var(--text-sec); margin-bottom:4px; font-weight:500; }
+    .quote-body { font-size:13px; color:var(--text); line-height:1.45; }
+
+    /* ── Trending ── */
+    .trend-section-title { font-size:13.5px; font-weight:700; color:var(--text-sec); padding:14px 16px 8px; text-transform:uppercase; letter-spacing:.5px; }
+    .trend-item {
+      display:flex; align-items:center; gap:13px; padding:13px 16px;
+      background:white; border-bottom:1px solid #F3F4F6; cursor:pointer; transition:background .12s;
+    }
+    .trend-item:hover { background:#FAFAFA; }
+    .trend-rank { font-size:18px; font-weight:800; color:#E5E7EB; width:28px; flex-shrink:0; }
+    .trend-info { flex:1; }
+    .trend-tag  { font-size:14.5px; font-weight:700; }
+    .trend-cnt  { font-size:11.5px; color:var(--text-sec); margin-top:2px; }
+    .trend-emoji { font-size:26px; }
+
+    /* ── Who to follow ── */
+    .who-item { display:flex; align-items:center; gap:12px; padding:13px 16px; background:white; border-bottom:1px solid #F3F4F6; }
+    .who-av {
+      width:44px; height:44px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:17px; color:white; font-weight:700;
+    }
+    .who-info { flex:1; }
+    .who-name { font-size:14px; font-weight:700; display:flex; align-items:center; gap:4px; }
+    .who-handle { font-size:12px; color:var(--text-sec); margin-top:2px; }
+    .who-desc { font-size:12px; color:var(--text-sec); margin-top:3px; }
+    .follow-btn {
+      padding:7px 16px; border-radius:20px; border:2px solid var(--primary);
+      background:transparent; color:var(--primary); font-family:'DM Sans',sans-serif;
+      font-size:12.5px; font-weight:700; cursor:pointer; transition:all .2s; white-space:nowrap;
+    }
+    .follow-btn.following { background:var(--primary); color:white; }
+
+    /* ── Comments overlay ── */
+    #comment-overlay {
+      position:absolute; inset:0; bottom:var(--nav-h); z-index:250;
+      background:rgba(0,0,0,.4); opacity:0; pointer-events:none; transition:opacity .25s;
+      display:flex; flex-direction:column; justify-content:flex-end;
+    }
+    #comment-overlay.on { opacity:1; pointer-events:all; }
+    .comment-sheet {
+      background:white; border-radius:22px 22px 0 0; max-height:75vh; display:flex; flex-direction:column;
+    }
+    .comment-hd { padding:14px 16px; border-bottom:1px solid #F3F4F6; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .comment-hd-title { font-size:15px; font-weight:700; }
+    .comment-close { background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-sec); }
+    .comment-list { overflow-y:auto; flex:1; padding:10px 0; }
+    .comment-item { display:flex; gap:10px; padding:10px 14px; }
+    .cm-av { width:34px; height:34px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:13px; color:white; font-weight:700; }
+    .cm-body { flex:1; }
+    .cm-name { font-size:13px; font-weight:700; }
+    .cm-text { font-size:13px; color:var(--text); line-height:1.45; margin-top:3px; }
+    .cm-time { font-size:11px; color:var(--text-sec); margin-top:3px; }
+    .cm-compose { display:flex; gap:10px; padding:12px 14px; border-top:1px solid #F3F4F6; flex-shrink:0; }
+    .cm-input { flex:1; border:none; outline:none; font-family:'DM Sans',sans-serif; font-size:14px; background:var(--bg); border-radius:20px; padding:9px 14px; }
+    .cm-send { padding:9px 16px; background:var(--primary); color:white; border:none; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; }
+
+    /* ── Post detail overlay ── */
+    .post-overlay {
+      position:absolute; inset:0; bottom:var(--nav-h); background:white; z-index:200;
+      transform:translateX(100%); transition:transform .32s var(--ease); display:flex; flex-direction:column;
+    }
+    .post-overlay.open { transform:none; }
+    .po-header { display:flex; align-items:center; gap:14px; padding:50px 14px 12px; border-bottom:1px solid #F3F4F6; flex-shrink:0; }
+    .po-back { background:none; border:none; font-size:24px; cursor:pointer; color:var(--text); line-height:1; }
+    .po-title { font-size:16px; font-weight:700; }
+    .po-body { overflow-y:auto; flex:1; }
+
+    /* ── FAB ── */
+    .nw-fab {
+      position:absolute; bottom:14px; right:14px; z-index:50;
+      width:52px; height:52px; border-radius:50%; background:var(--primary); border:none;
+      display:flex; align-items:center; justify-content:center; font-size:22px;
+      box-shadow:0 6px 22px rgba(58,91,255,.42); cursor:pointer; transition:transform .15s;
+    }
+    .nw-fab:active { transform:scale(.92); }
+
+    /* ── DESKTOP HINT ── */
+    @media(min-width:430px) {
+      body::before {
+        content:'📱 NearHai – Hackathon Demo';
+        position:fixed; top:16px; left:50%; transform:translateX(-50%);
+        background:rgba(255,255,255,.9); padding:8px 18px; border-radius:20px;
+        font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; color:#1A1A2E;
+        box-shadow:0 4px 16px rgba(0,0,0,.12); z-index:9999; backdrop-filter:blur(8px);
+      }
+    }
+  </style>
+</head>
+<body class="mode-buy">
+<div id="app">
+
+  <!-- SPLASH -->
+  <div id="splash">
+    <div class="splash-logo">📍</div>
+    <div class="splash-name">NearHai</div>
+    <div class="splash-tag">Your Local Super App</div>
+    <div class="splash-dots">
+      <div class="splash-dot"></div>
+      <div class="splash-dot"></div>
+      <div class="splash-dot"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: NEAR (MAP) -->
+  <div id="screen-near" class="screen active">
+    <div id="map"></div>
+    <div class="top-overlay">
+      <div class="search-bar">
+        <span class="search-bar-icon">🔍</span>
+        <input type="text" placeholder="Search nearby things…" id="search-input" readonly>
+        <div class="search-avatar">RK</div>
+      </div>
+      <div class="intent-pills" id="intent-pills">
+        <button class="pill active" data-mode="buy"       onclick="setMode('buy')">🛍️ Buy</button>
+        <button class="pill"        data-mode="travel"    onclick="setMode('travel')">🚗 Travel</button>
+        <button class="pill"        data-mode="services"  onclick="setMode('services')">🔧 Services</button>
+        <button class="pill"        data-mode="explore"   onclick="setMode('explore')">🌍 Explore</button>
+        <button class="pill"        data-mode="emergency" onclick="setMode('emergency')">🚨 Emergency</button>
+      </div>
+    </div>
+    <button class="fab-locate" onclick="locateMe()">🎯</button>
+    <div id="bs-bd" class="bs-backdrop" onclick="closeBS()"></div>
+    <div id="bs" class="bottom-sheet">
+      <div class="bs-handle"></div>
+      <div class="bs-content" id="bs-body"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: EXPLORE (NearWorld Feed) -->
+  <div id="screen-explore" class="screen">
+    <div class="nw-wrap">
+
+      <!-- sticky header -->
+      <div class="nw-header">
+        <div class="nw-header-top">
+          <div class="nw-logo">📍 NearWorld</div>
+          <div class="nw-head-right">
+            <button class="nw-icon-btn" onclick="toast('🔔 Notifications opened')">🔔</button>
+            <div class="nw-self-av" onclick="switchTab('profile')">RK</div>
+          </div>
+        </div>
+        <div class="nw-tabs">
+          <button class="nw-tab active" id="nwt-feed"      onclick="nwTab('feed')">Feed</button>
+          <button class="nw-tab"        id="nwt-trending"  onclick="nwTab('trending')">🔥 Trending</button>
+          <button class="nw-tab"        id="nwt-discover"  onclick="nwTab('discover')">Discover</button>
+        </div>
+      </div>
+
+      <!-- scrollable body -->
+      <div class="nw-body" id="nw-body">
+
+        <!-- ── FEED TAB ── -->
+        <div id="nw-feed-pane">
+          <!-- stories -->
+          <div class="stories-row" id="stories-row"></div>
+          <!-- composer -->
+          <div class="composer-card">
+            <div class="nw-self-av sm">RK</div>
+            <div class="composer-inp" id="composer-inp" contenteditable="true" data-placeholder="What's happening near you?"></div>
+          </div>
+          <div class="composer-bar" id="composer-bar" style="display:none">
+            <div class="composer-tools">
+              <button class="c-tool" onclick="addComposerTag('📷')">📷</button>
+              <button class="c-tool" onclick="addComposerTag('📍')">📍</button>
+              <button class="c-tool" onclick="addComposerTag('🎥')">🎥</button>
+              <button class="c-tool" onclick="addComposerTag('📊')">📊</button>
+            </div>
+            <button class="post-btn" onclick="submitPost()">Post</button>
+          </div>
+          <!-- feed -->
+          <div id="nw-feed-list"></div>
+        </div>
+
+        <!-- ── TRENDING TAB ── -->
+        <div id="nw-trending-pane" style="display:none">
+          <div class="trend-section-title">🔥 Trending in Ludhiana</div>
+          <div id="nw-trend-list"></div>
+        </div>
+
+        <!-- ── DISCOVER TAB ── -->
+        <div id="nw-discover-pane" style="display:none">
+          <div class="trend-section-title">📍 Who to Follow Near You</div>
+          <div id="nw-who-list"></div>
+          <div class="trend-section-title" style="margin-top:6px">🗂️ Explore Categories</div>
+          <div class="ex-grid" id="ex-grid" style="padding:0 14px 14px"></div>
+        </div>
+
+      </div><!-- nw-body -->
+    </div>
+
+    <!-- FAB new post -->
+    <button class="nw-fab" onclick="focusComposer()">✍️</button>
+
+    <!-- Post detail overlay -->
+    <div class="post-overlay" id="post-overlay">
+      <div class="po-header">
+        <button class="po-back" onclick="closePostOverlay()">‹</button>
+        <span class="po-title">Post</span>
+      </div>
+      <div class="po-body" id="po-body"></div>
+    </div>
+
+  </div>
+  </div>
+
+  <!-- SCREEN: ACTIVITY -->
+  <div id="screen-activity" class="screen">
+    <div class="ss">
+      <div class="ss-head">📋 Activity</div>
+      <div class="act-list" id="act-list"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN: PROFILE -->
+  <div id="screen-profile" class="screen">
+    <div class="ss">
+      <div class="prof-hd">
+        <div class="prof-av">RK</div>
+        <div class="prof-nm">Rahul Kumar</div>
+        <div class="prof-loc">📍 Model Town, Ludhiana, Punjab</div>
+      </div>
+      <div class="prof-stats">
+        <div class="stat-b"><div class="stat-n">24</div><div class="stat-l">Orders</div></div>
+        <div class="stat-b"><div class="stat-n">8</div><div class="stat-l">Bookings</div></div>
+        <div class="stat-b"><div class="stat-n">4.8⭐</div><div class="stat-l">Rating</div></div>
+      </div>
+      <div class="pmenu">
+        <div class="pmenu-item" onclick="toast('📦 Opening My Orders…')"><span class="pmi-ic">📦</span>My Orders<span class="pmi-arr">›</span></div>
+        <div class="pmenu-item" onclick="toast('📍 Opening Saved Addresses…')"><span class="pmi-ic">📍</span>Saved Addresses<span class="pmi-arr">›</span></div>
+        <div class="pmenu-item" onclick="toast('💳 Opening Payments…')"><span class="pmi-ic">💳</span>Payment Methods<span class="pmi-arr">›</span></div>
+        <div class="pmenu-item" onclick="toast('🔔 Notifications Settings…')"><span class="pmi-ic">🔔</span>Notifications<span class="pmi-arr">›</span></div>
+        <div class="pmenu-item" onclick="toast('❓ Opening Help Center…')"><span class="pmi-ic">❓</span>Help & Support<span class="pmi-arr">›</span></div>
+        <div class="pmenu-item" onclick="toast('⚙️ Opening Settings…')"><span class="pmi-ic">⚙️</span>Settings<span class="pmi-arr">›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELIVERY TRACKING OVERLAY -->
+  <div id="delivery-overlay">
+    <div class="del-panel">
+      <div class="del-panel-hd">
+        <div class="del-panel-title" id="del-title">⚡ Instant Delivery</div>
+        <button class="del-close" onclick="closeDel()">✕</button>
+      </div>
+      <div class="track-steps" id="track-steps"></div>
+      <div class="rider-card" id="rider-card" style="display:none;">
+        <div class="rider-av">🏍️</div>
+        <div class="rider-inf">
+          <div class="rider-nm" id="rider-nm">Gurpreet Singh</div>
+          <div class="rider-veh" id="rider-veh">Activa • PB-10-GS-4567</div>
+        </div>
+        <button class="btn-call" onclick="toast('📞 Calling rider…')">📞 Call</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE MODAL -->
+  <div id="sched-modal" onclick="closeSched(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-title">📦 Schedule Delivery</div>
+      <div class="sec-title">Choose a Delivery Window</div>
+      <div class="time-slots" id="time-slots">
+        <div class="t-slot on"  onclick="pickSlot(this)">Today Evening (5–8 PM)</div>
+        <div class="t-slot"     onclick="pickSlot(this)">Today Night (8–11 PM)</div>
+        <div class="t-slot"     onclick="pickSlot(this)">Tomorrow Morning (8–11 AM)</div>
+        <div class="t-slot"     onclick="pickSlot(this)">Tomorrow Afternoon (12–3 PM)</div>
+        <div class="t-slot"     onclick="pickSlot(this)">Tomorrow Evening (5–8 PM)</div>
+      </div>
+      <div style="margin-top:20px;">
+        <button class="btn-p" onclick="confirmSched()">✅ Confirm Schedule</button>
+        <button class="btn-s" onclick="closeSched()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMENT OVERLAY -->
+  <div id="comment-overlay" onclick="closeComments(event)">
+    <div class="comment-sheet" onclick="event.stopPropagation()">
+      <div class="comment-hd">
+        <span class="comment-hd-title">💬 Replies</span>
+        <button class="comment-close" onclick="closeComments()">✕</button>
+      </div>
+      <div class="comment-list" id="comment-list"></div>
+      <div class="cm-compose">
+        <div class="nw-self-av sm">RK</div>
+        <input class="cm-input" id="cm-input" placeholder="Write a reply…">
+        <button class="cm-send" onclick="sendComment()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+
+  <div id="toast"></div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn" data-tab="explore"  onclick="switchTab('explore')">
+      <span class="nav-ico">🧭</span>
+      <span class="nav-lbl">Explore</span>
+    </button>
+    <button class="nav-btn near-btn active" data-tab="near" onclick="switchTab('near')">
+      <span class="nav-ico">📍</span>
+      <span class="nav-lbl">Near</span>
+    </button>
+    <button class="nav-btn" data-tab="activity" onclick="switchTab('activity')">
+      <span class="nav-ico-wrap">
+        <span class="nav-ico">📋</span>
+        <span class="nav-badge" id="act-badge" style="display:none;">0</span>
+      </span>
+      <span class="nav-lbl">Activity</span>
+    </button>
+    <button class="nav-btn" data-tab="profile"  onclick="switchTab('profile')">
+      <span class="nav-ico">👤</span>
+      <span class="nav-lbl">Profile</span>
+    </button>
+  </nav>
+
+</div><!-- #app -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ══════════════════════════════════════════════
+   NEARHAI — PROTOTYPE ENGINE
+══════════════════════════════════════════════ */
+
+/* ─── CONSTANTS ─── */
+const USER_LAT = 30.9010, USER_LNG = 75.8573;
+
+const MODE_CFG = {
+  buy:       { color:'#22C55E', icon:'🛍️', mapIcon:'🛍️' },
+  travel:    { color:'#F97316', icon:'🚗', mapIcon:'🚗' },
+  services:  { color:'#8B5CF6', icon:'🔧', mapIcon:'🔧' },
+  explore:   { color:'#06B6D4', icon:'🎉', mapIcon:'🎉' },
+  emergency: { color:'#EF4444', icon:'🚨', mapIcon:'🚨' }
+};
+
+/* ─── STATE ─── */
+const S = {
+  mode: 'buy',
+  tab: 'near',
+  marker: null,
+  product: null,
+  delivery: null,
+  slot: 'Today Evening (5–8 PM)',
+  stage: -1,
+  stages: [],
+  riderM: null,
+  riderL: null,
+  riderT: null,
+  newActs: 0
+};
+
+/* ─── MOCK DATA ─── */
+const DATA = {
+  buy: [
+    { id:'b1', lat:30.9045, lng:75.8612, name:'TechMart Electronics', dist:'0.3 km', rating:4.5, cat:'Electronics', open:true, emoji:'🖥️',
+      products:[
+        {name:'Arduino UNO',     price:420,  emoji:'🔌', desc:'Microcontroller board, R3'},
+        {name:'Breadboard Kit',  price:80,   emoji:'⚡', desc:'830-tie prototyping kit'},
+        {name:'Raspberry Pi 4',  price:3200, emoji:'💻', desc:'4GB RAM, latest model'},
+        {name:'Jumper Wires',    price:35,   emoji:'🔗', desc:'40-piece M-to-M set'}
+      ]},
+    { id:'b2', lat:30.8975, lng:75.8531, name:'FreshMart Grocery', dist:'0.7 km', rating:4.2, cat:'Grocery', open:true, emoji:'🛒',
+      products:[
+        {name:'Mixed Vegetables', price:60,  emoji:'🥦', desc:'1 kg seasonal mix'},
+        {name:'Basmati Rice',     price:120, emoji:'🌾', desc:'2 kg premium quality'},
+        {name:'Fresh Paneer',     price:90,  emoji:'🧀', desc:'200g fresh block'},
+        {name:'Whole Wheat Atta', price:55,  emoji:'🫓', desc:'1 kg fortified pack'}
+      ]},
+    { id:'b3', lat:30.9028, lng:75.8502, name:'StyleHub Clothing', dist:'1.1 km', rating:4.0, cat:'Clothing', open:true, emoji:'👗',
+      products:[
+        {name:'Cotton Kurta',   price:650,  emoji:'👕', desc:'Summer collection'},
+        {name:'Denim Jeans',    price:1200, emoji:'👖', desc:'Slim fit, stretchable'},
+        {name:'Sports T-Shirt', price:380,  emoji:'🎽', desc:'Dry-fit performance'}
+      ]},
+    { id:'b4', lat:30.8995, lng:75.8618, name:'BookNook Stationery', dist:'0.5 km', rating:4.8, cat:'Books', open:false, emoji:'📚',
+      products:[
+        {name:'NCERT Class 12', price:480, emoji:'📚', desc:'Complete set, all subjects'},
+        {name:'Premium Notebook',price:95, emoji:'📓', desc:'A4, 200 pages, hardbound'},
+        {name:'Camlin Geometry', price:120,emoji:'📐', desc:'Gold set with case'}
+      ]}
+  ],
+  travel: [
+    { id:'t1', lat:30.9020, lng:75.8590, name:'Auto Rickshaw', drvName:'Gurpreet Singh',  type:'Auto Rickshaw', rating:4.6, seats:3, ppk:'₹12/km', minFare:'₹30', eta:'3 min', plate:'PB-10-A-1234', emoji:'🛺' },
+    { id:'t2', lat:30.9005, lng:75.8548, name:'Shared Cab',    drvName:'Rajveer Sharma',  type:'Swift Dzire',   rating:4.4, seats:4, ppk:'₹8/km',  minFare:'₹50', eta:'5 min', plate:'PB-10-B-5678', emoji:'🚗' },
+    { id:'t3', lat:30.9035, lng:75.8555, name:'E-Rickshaw',    drvName:'Harpreet Kaur',   type:'E-Rickshaw',    rating:4.3, seats:5, ppk:'₹6/km',  minFare:'₹20', eta:'4 min', plate:'PB-10-C-9012', emoji:'⚡' }
+  ],
+  services: [
+    { id:'s1', lat:30.9018, lng:75.8600, name:'Ramesh Kumar',  prof:'Electrician',   rating:4.7, exp:'8 yrs',  dist:'0.8 km', avail:true,  desc:'Home wiring, switchboards, ceiling fans, inverter installation & repair.', tags:['Wiring','Inverter','Fan Install','MCB Repair'], rate:'₹200/hr', emoji:'⚡' },
+    { id:'s2', lat:30.8990, lng:75.8545, name:'Sukhdev Singh', prof:'Plumber',        rating:4.3, exp:'12 yrs', dist:'1.2 km', avail:true,  desc:'Pipeline repair, tap & shower installation, RO service, bathroom fittings.', tags:['Pipeline','Tap Install','RO Service','Bathroom'], rate:'₹180/hr', emoji:'🔧' },
+    { id:'s3', lat:30.9042, lng:75.8535, name:'Manpreet Tech', prof:'AC Technician',  rating:4.5, exp:'6 yrs',  dist:'0.5 km', avail:false, desc:'AC installation, gas refill (R-32/R-410), servicing for all major brands.', tags:['AC Install','Gas Refill','Servicing','All Brands'], rate:'₹250/hr', emoji:'❄️' }
+  ],
+  explore: [
+    { id:'e1', lat:30.8985, lng:75.8580, name:'Diwali Mela 2024',       time:'Today, 6:00 PM onwards',    cat:'Festival',   emoji:'🪔', color:'#F97316', loc:'Rose Garden, Ludhiana',       desc:'Annual Diwali celebration with food stalls, cultural performances, fireworks & shopping.', attendees:2400 },
+    { id:'e2', lat:30.9050, lng:75.8543, name:'Tech Startup Meetup',     time:'Tomorrow, 2:00 PM',          cat:'Technology', emoji:'💡', color:'#3A5BFF', loc:'CoWork Hub, Civil Lines',      desc:'Network with local entrepreneurs. Guest speaker from a Series-A funded startup.', attendees:85 },
+    { id:'e3', lat:30.9015, lng:75.8630, name:"Farmer's Weekly Market",  time:'Every Saturday, 7:00 AM',    cat:'Market',     emoji:'🌽', color:'#22C55E', loc:'Sector 32 Ground, Ludhiana',  desc:'Fresh organic produce directly from local farmers at the best prices.', attendees:500 }
+  ],
+  emergency: [
+    { id:'em1', lat:30.9060, lng:75.8600, name:'DMC & Hospital',           type:'Hospital',       emoji:'🏥', dist:'0.4 km', phone:'0161-2301234', time:'24/7 Emergency', addr:'Tagore Nagar, Ludhiana',    svcs:['Emergency','ICU','Surgery','Ambulance'] },
+    { id:'em2', lat:30.8975, lng:75.8555, name:'Sarabha Nagar Police Stn', type:'Police Station', emoji:'🚔', dist:'0.6 km', phone:'0161-2400100', time:'24/7 Open',       addr:'Sarabha Nagar, Ludhiana',  svcs:['Emergency','FIR','Traffic Help'] },
+    { id:'em3', lat:30.9005, lng:75.8590, name:'MedPlus Pharmacy',         type:'Pharmacy',       emoji:'💊', dist:'0.2 km', phone:'0161-5000123', time:'Open till 11 PM', addr:'Model Town, Ludhiana',     svcs:['Medicines','Health Products','Lab Tests'] }
+  ]
+};
+
+/* ─── MAP ─── */
+let map, uMarker, curMarkers = [];
+
+function initMap() {
+  map = L.map('map', { center:[USER_LAT, USER_LNG], zoom:15, zoomControl:false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution:'© OpenStreetMap © CARTO', maxZoom:20
+  }).addTo(map);
+  L.control.zoom({ position:'bottomright' }).addTo(map);
+
+  // User dot
+  uMarker = L.marker([USER_LAT, USER_LNG], {
+    icon: L.divIcon({ html:'<div class="user-wrap"><div class="u-pulse"></div><div class="u-dot"></div></div>', className:'', iconSize:[22,22], iconAnchor:[11,11] }),
+    zIndexOffset:1000
+  }).addTo(map);
+
+  loadMarkers('buy');
+}
+
+function loadMarkers(mode) {
+  curMarkers.forEach(m => map.removeLayer(m));
+  curMarkers = [];
+  const col = MODE_CFG[mode].color;
+  DATA[mode].forEach(d => {
+    const m = L.marker([d.lat, d.lng], {
+      icon: L.divIcon({
+        html:`<div class="mm" style="background:${col}"><span>${d.emoji||MODE_CFG[mode].mapIcon}</span></div>`,
+        className:'', iconSize:[38,38], iconAnchor:[19,38]
+      })
+    }).addTo(map).on('click', () => openBS(d, mode));
+    curMarkers.push(m);
+  });
+}
+
+/* ─── MODE SWITCHING ─── */
+function setMode(mode) {
+  if (S.mode === mode) return;
+  S.mode = mode;
+  document.body.className = `mode-${mode}`;
+  document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.mode === mode));
+  closeBS();
+  loadMarkers(mode);
+  toast(`${MODE_CFG[mode].icon} ${mode.charAt(0).toUpperCase()+mode.slice(1)} mode active`);
+}
+
+/* ─── BOTTOM SHEET ─── */
+function openBS(data, mode) {
+  S.marker = data; S.product = null; S.delivery = null;
+  document.getElementById('bs-body').innerHTML = buildSheet(data, mode);
+  document.getElementById('bs').classList.add('open');
+  document.getElementById('bs-bd').classList.add('on');
+}
+function closeBS() {
+  document.getElementById('bs').classList.remove('open');
+  document.getElementById('bs-bd').classList.remove('on');
+}
+function buildSheet(d, mode) {
+  switch(mode){
+    case 'buy':       return sheetBuy(d);
+    case 'travel':    return sheetTravel(d);
+    case 'services':  return sheetService(d);
+    case 'explore':   return sheetExplore(d);
+    case 'emergency': return sheetEmergency(d);
+  }
+}
+
+/* ─── BUY SHEET ─── */
+function sheetBuy(s) {
+  const prods = s.products.map((p,i)=>`
+    <div class="product-card" id="pc${i}" onclick="selProd(${i})">
+      <div class="prod-emoji">${p.emoji}</div>
+      <div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-price">₹${p.price}</div></div>
+      <button class="btn-sel" id="ps${i}">Select</button>
+    </div>`).join('');
+  return `
+    <div class="bs-header">
+      <div class="bs-emoji">${s.emoji}</div>
+      <div>
+        <div class="bs-name">${s.name}</div>
+        <div class="bs-metas">
+          <span class="badge">📍 ${s.dist}</span>
+          <span class="badge">⭐ ${s.rating}</span>
+          <span class="badge ${s.open?'badge-ok':'badge-busy'}">${s.open?'Open Now':'Closed'}</span>
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="sec-title">Popular Products</div>
+    <div class="product-list">${prods}</div>
+    <div id="del-sec" style="display:none">
+      <div class="divider"></div>
+      <div class="sec-title" id="sel-prod-label">Delivery for ...</div>
+      <div class="del-opts">
+        <div class="del-card" id="dc-i" onclick="selDel('instant')">
+          <div class="del-icon">⚡</div>
+          <div class="del-info"><div class="del-name">Instant Delivery</div><div class="del-desc">30–45 min • Rider nearby</div></div>
+          <div class="del-price">₹30</div>
+        </div>
+        <div class="del-card" id="dc-r" onclick="selDel('routine')">
+          <div class="del-icon">📦</div>
+          <div class="del-info"><div class="del-name">Routine Delivery</div><div class="del-desc">Schedule a time window</div></div>
+          <div class="del-price">Free</div>
+        </div>
+      </div>
+      <div id="del-actions" style="display:none;margin-top:14px;">
+        <button class="btn-p" id="order-btn" onclick="placeOrder()">⚡ Order Instant Delivery</button>
+        <button class="btn-s" onclick="openSched()">📦 Schedule Delivery</button>
+      </div>
+    </div>`;
+}
+
+function selProd(i) {
+  const p = S.marker.products[i];
+  S.product = p;
+  document.querySelectorAll('.product-card').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('.btn-sel').forEach(b=>{b.classList.remove('on');b.textContent='Select';});
+  document.getElementById(`pc${i}`).classList.add('sel');
+  const btn = document.getElementById(`ps${i}`);
+  btn.classList.add('on'); btn.textContent='✓ Added';
+  const sec = document.getElementById('del-sec');
+  sec.style.display='block';
+  document.getElementById('sel-prod-label').textContent=`Delivery for ${p.name}`;
+  sec.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function selDel(type) {
+  S.delivery = type;
+  document.getElementById('dc-i').classList.toggle('sel', type==='instant');
+  document.getElementById('dc-r').classList.toggle('sel', type==='routine');
+  const ob = document.getElementById('order-btn');
+  ob.textContent = type==='instant' ? '⚡ Order Instant Delivery' : '📦 Schedule Delivery';
+  document.getElementById('del-actions').style.display='block';
+}
+
+function placeOrder() {
+  if (!S.delivery){ toast('⚠️ Please select a delivery option'); return; }
+  if (S.delivery==='instant') startInstant();
+  else openSched();
+}
+
+/* ─── INSTANT DELIVERY ─── */
+const STAGES = [
+  {name:'Order Confirmed',  desc:'Your order has been placed', icon:'✅'},
+  {name:'Preparing',        desc:'Shop is packing your items', icon:'📦'},
+  {name:'Rider Assigned',   desc:'',                           icon:'🏍️'},
+  {name:'On the Way',       desc:'Rider is heading to you',    icon:'🚀'},
+  {name:'Delivered',        desc:'Enjoy your purchase! 🎉',    icon:'✅'}
+];
+const RIDERS = [
+  {name:'Gurpreet Singh', veh:'Activa • PB-10-GS-4567'},
+  {name:'Vikram Sharma',  veh:'Pulsar • PB-11-VS-8901'},
+  {name:'Ajay Kumar',     veh:'Splendor • PB-12-AK-2345'}
+];
+
+function startInstant() {
+  const shop = S.marker, prod = S.product;
+  closeBS();
+  S.stage = 0; S.stages = STAGES.map(s=>({...s}));
+  if (prod) S.stages[0].desc = `${prod.name} • ₹${prod.price + 30} total`;
+  document.getElementById('del-title').textContent = `⚡ Delivering ${prod?prod.name:'Order'}`;
+  renderStages(0);
+  document.getElementById('delivery-overlay').classList.add('on');
+  document.getElementById('rider-card').style.display='none';
+
+  setTimeout(()=>renderStages(1), 2500);
+  setTimeout(()=>{
+    renderStages(2);
+    const r = RIDERS[Math.floor(Math.random()*3)];
+    document.getElementById('rider-nm').textContent = r.name;
+    document.getElementById('rider-veh').textContent = r.veh;
+    document.getElementById('rider-card').style.display='flex';
+    animRider(shop.lat, shop.lng);
+  }, 5000);
+  setTimeout(()=>renderStages(3), 8000);
+}
+
+function renderStages(active) {
+  S.stage = active;
+  document.getElementById('track-steps').innerHTML = STAGES.map((s,i)=>`
+    <div class="t-step ${i<active?'done':i===active?'curr':''}">
+      <div class="t-dot">${i<active?'✓':s.icon}</div>
+      <div><div class="t-name">${s.name}</div>${s.desc?`<div class="t-desc">${s.desc}</div>`:''}</div>
+    </div>`).join('');
+}
+
+function animRider(sLat, sLng) {
+  if (S.riderM){ map.removeLayer(S.riderM); S.riderM=null; }
+  if (S.riderL){ map.removeLayer(S.riderL); S.riderL=null; }
+  if (S.riderT){ clearInterval(S.riderT); S.riderT=null; }
+
+  S.riderM = L.marker([sLat, sLng], {
+    icon: L.divIcon({ html:'<div class="rider-ico">🏍️</div>', className:'', iconSize:[34,34], iconAnchor:[17,17] }),
+    zIndexOffset:2000
+  }).addTo(map);
+
+  S.riderL = L.polyline([[sLat,sLng],[USER_LAT,USER_LNG]], {
+    color:'#3A5BFF', weight:3, dashArray:'10 8', opacity:.75
+  }).addTo(map);
+
+  map.fitBounds([[sLat,sLng],[USER_LAT,USER_LNG]], {padding:[70,70], animate:true});
+
+  let step=0, total=22;
+  S.riderT = setInterval(()=>{
+    step++;
+    if (step>=total) {
+      clearInterval(S.riderT); S.riderT=null;
+      renderStages(4);
+      toast('🎉 Order delivered! Enjoy!');
+      addAct({ icon:'📦', bg:'#DCFCE7', title:`${S.product?S.product.name:'Order'} — Delivered`, meta:`${S.marker?S.marker.name:''} • Just now`, stat:'s-done', statTxt:'Delivered' });
+      setTimeout(()=>{ if(S.riderM){map.removeLayer(S.riderM);S.riderM=null;} if(S.riderL){map.removeLayer(S.riderL);S.riderL=null;} }, 2500);
+      return;
+    }
+    const t=step/total;
+    S.riderM.setLatLng([sLat+(USER_LAT-sLat)*t, sLng+(USER_LNG-sLng)*t]);
+  }, 1400);
+}
+
+function closeDel() {
+  document.getElementById('delivery-overlay').classList.remove('on');
+  if(S.riderM){map.removeLayer(S.riderM);S.riderM=null;}
+  if(S.riderL){map.removeLayer(S.riderL);S.riderL=null;}
+  if(S.riderT){clearInterval(S.riderT);S.riderT=null;}
+  map.setView([USER_LAT,USER_LNG],15,{animate:true});
+}
+
+/* ─── SCHEDULE ─── */
+function openSched() { document.getElementById('sched-modal').classList.add('on'); }
+function closeSched(e) {
+  if (!e || e.target===document.getElementById('sched-modal'))
+    document.getElementById('sched-modal').classList.remove('on');
+}
+function pickSlot(el) {
+  document.querySelectorAll('.t-slot').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on'); S.slot = el.textContent;
+}
+function confirmSched() {
+  closeSched(); closeBS();
+  const nm = S.product?S.product.name:'Item';
+  toast(`📦 ${nm} scheduled: ${S.slot}`);
+  addAct({ icon:'📦', bg:'#EFF6FF', title:`${nm} — Routine Delivery`, meta:`Scheduled: ${S.slot}`, stat:'s-sched', statTxt:'Scheduled' });
+}
+
+/* ─── TRAVEL SHEET ─── */
+function sheetTravel(v) {
+  const est = Math.round(4.2 * parseInt(v.ppk) + 20);
+  return `
+    <div class="bs-header">
+      <div class="bs-emoji">${v.emoji}</div>
+      <div>
+        <div class="bs-name">${v.name}</div>
+        <div class="bs-metas">
+          <span class="badge">⏱️ ${v.eta}</span>
+          <span class="badge">⭐ ${v.rating}</span>
+          <span class="badge badge-ok">Available</span>
+        </div>
+      </div>
+    </div>
+    <div class="driver-card">
+      <div class="drv-avatar">${v.drvName.charAt(0)}</div>
+      <div>
+        <div class="drv-name">${v.drvName}</div>
+        <div class="drv-meta">${v.type} • ${v.plate}</div>
+        <div class="drv-rating">⭐ ${v.rating} • ${v.seats} seats max</div>
+      </div>
+    </div>
+    <div class="route-box">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Estimated Route</div>
+      <div class="route-row"><div class="rdot" style="background:#3A5BFF"></div><span>Your Location (Model Town)</span></div>
+      <div class="rline"></div>
+      <div class="route-row"><div class="rdot" style="background:#EF4444"></div><span>Civil Lines, Ludhiana</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid #E5E7EB;">
+        <span style="font-size:12.5px;color:var(--text-sec)">~4.2 km</span>
+        <span style="font-size:13.5px;font-weight:700">Est. ₹${est}</span>
+        <span style="font-size:12.5px;color:var(--text-sec)">${v.ppk}</span>
+      </div>
+    </div>
+    <button class="btn-p" onclick="bookRide('${v.id}')">🚀 Book Seat</button>
+    <button class="btn-s" onclick="toast('📞 Calling ${v.drvName.split(' ')[0]}…')">📞 Call Driver</button>`;
+}
+function bookRide(id) {
+  const v = DATA.travel.find(x=>x.id===id);
+  closeBS();
+  toast(`✅ Booked! ${v.drvName} arriving in ${v.eta}`);
+  addAct({ icon:'🚗', bg:'#FFF7ED', title:`${v.name} — Ride Booked`, meta:`${v.drvName} • Arriving in ${v.eta}`, stat:'s-book', statTxt:'Confirmed' });
+}
+
+/* ─── SERVICES SHEET ─── */
+function sheetService(p) {
+  return `
+    <div class="bs-header">
+      <div class="bs-emoji">${p.emoji}</div>
+      <div>
+        <div class="bs-name">${p.name}</div>
+        <div class="bs-metas">
+          <span class="badge">📍 ${p.dist}</span>
+          <span class="badge">⭐ ${p.rating}</span>
+          <span class="badge ${p.avail?'badge-ok':'badge-busy'}">${p.avail?'Available':'Busy'}</span>
+        </div>
+      </div>
+    </div>
+    <div class="pro-card">
+      <div class="pro-head">
+        <div class="pro-av">${p.emoji}</div>
+        <div>
+          <div style="font-size:15px;font-weight:700">${p.prof}</div>
+          <div style="font-size:12px;color:var(--text-sec)">⏳ ${p.exp} experience</div>
+          <div style="font-size:13.5px;font-weight:700;color:var(--accent);margin-top:4px">${p.rate}</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text-sec);margin-bottom:11px;line-height:1.55">${p.desc}</div>
+      <div class="tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    </div>
+    <button class="btn-p" onclick="bookSvc('${p.id}')">📅 Book Service Now</button>
+    <button class="btn-s" onclick="toast('📞 Calling ${p.name.split(' ')[0]}…')">📞 Call ${p.name.split(' ')[0]}</button>`;
+}
+function bookSvc(id) {
+  const p = DATA.services.find(x=>x.id===id);
+  if (!p.avail){ toast('⚠️ Currently busy, try again later'); return; }
+  closeBS();
+  toast(`✅ ${p.prof} booked! Arriving in 30–60 min`);
+  addAct({ icon:'🔧', bg:'#F5F3FF', title:`${p.prof} Service — Booked`, meta:`${p.name} • Arriving in 30–60 min`, stat:'s-book', statTxt:'Confirmed' });
+}
+
+/* ─── EXPLORE SHEET ─── */
+function sheetExplore(e) {
+  return `
+    <div class="event-card">
+      <div class="event-banner" style="background:${e.color}22">${e.emoji}</div>
+      <div class="event-body">
+        <div class="bs-name">${e.name}</div>
+        <div class="event-time">🕐 ${e.time}</div>
+        <div class="bs-metas" style="margin-top:6px">
+          <span class="badge">📍 ${e.loc}</span>
+          <span class="badge">👥 ${e.attendees.toLocaleString()}+ attending</span>
+          <span class="badge badge-ok">${e.cat}</span>
+        </div>
+        <div class="event-desc">${e.desc}</div>
+      </div>
+    </div>
+    <button class="btn-p" onclick="joinEvt('${e.id}')">🎟️ Register / View Details</button>
+    <button class="btn-s" onclick="toast('🔗 Link copied!')">🔗 Share Event</button>`;
+}
+function joinEvt(id) {
+  const e = DATA.explore.find(x=>x.id===id);
+  closeBS();
+  toast(`🎟️ Registered for ${e.name}!`);
+  addAct({ icon:e.emoji, bg:'#EFF6FF', title:`${e.name}`, meta:`${e.time}`, stat:'s-sched', statTxt:'Registered' });
+}
+
+/* ─── EMERGENCY SHEET ─── */
+function sheetEmergency(e) {
+  return `
+    <div class="em-card">
+      <div class="em-type">${e.type}</div>
+      <div class="em-name">${e.emoji} ${e.name}</div>
+      <div class="em-detail">⏰ ${e.time}</div>
+      <div class="em-detail">📍 ${e.addr}</div>
+      <div class="em-detail" style="font-weight:600">📞 ${e.phone}</div>
+      <div class="tags" style="margin-top:11px">${e.svcs.map(s=>`<span class="tag">${s}</span>`).join('')}</div>
+    </div>
+    <div style="display:flex;gap:9px">
+      <button class="btn-em" onclick="toast('📞 Calling ${e.phone}…')">📞 Call Now</button>
+      <button class="btn-s" style="flex:1" onclick="toast('🗺️ Opening directions…')">🗺️ Directions</button>
+    </div>`;
+}
+
+/* ─── TABS ─── */
+function switchTab(tab) {
+  S.tab = tab;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(`screen-${tab}`).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  if (tab==='activity') { S.newActs=0; document.getElementById('act-badge').style.display='none'; }
+}
+
+/* ─── ACTIVITY ─── */
+const acts = [
+  {icon:'🔌', bg:'#DCFCE7', title:'Arduino UNO — Delivered',     meta:'TechMart Electronics • 2 days ago',  stat:'s-done',  statTxt:'Delivered'},
+  {icon:'🚗', bg:'#FFF7ED', title:'Shared Cab — Completed',       meta:'Rajveer Sharma • 5 days ago',         stat:'s-done',  statTxt:'Completed'},
+  {icon:'🔧', bg:'#F5F3FF', title:'Electrician Service — Done',   meta:'Ramesh Kumar • 1 week ago',           stat:'s-done',  statTxt:'Completed'},
+  {icon:'🪔', bg:'#EFF6FF', title:'Diwali Mela 2024',             meta:'Rose Garden • Last week',             stat:'s-sched', statTxt:'Attended'}
+];
+function addAct(a) {
+  acts.unshift(a);
+  renderActs();
+  S.newActs++;
+  const b = document.getElementById('act-badge');
+  b.style.display='flex'; b.textContent=S.newActs;
+}
+function renderActs() {
+  document.getElementById('act-list').innerHTML = acts.map(a=>`
+    <div class="act-item">
+      <div class="act-ico" style="background:${a.bg}">${a.icon}</div>
+      <div class="act-inf">
+        <div class="act-title">${a.title}</div>
+        <div class="act-meta">${a.meta}</div>
+      </div>
+      <span class="act-stat ${a.stat}">${a.statTxt}</span>
+    </div>`).join('');
+}
+
+/* ─── NEARWORLD SOCIAL DATA ─── */
+const NW_USERS = [
+  { id:'u1', name:'Priya Sharma',      handle:'@priya_ldh',    av:'PS', color:'#8B5CF6', verified:true,  bio:'Local journalist | Ludhiana Tribune | Covering city since 2017' },
+  { id:'u2', name:'Punjab Traffic HQ', handle:'@pb_traffic',   av:'🚦', color:'#F97316', verified:true,  bio:'Official Punjab Traffic Police, Ludhiana Division' },
+  { id:'u3', name:'Rajan Ahuja',       handle:'@rajan_eats',   av:'RA', color:'#22C55E', verified:false, bio:'Food blogger | Reviewing every dhaba in Ludhiana 🍽️' },
+  { id:'u4', name:'CityAlert Ldh',     handle:'@cityalert',    av:'🚨', color:'#EF4444', verified:true,  bio:'Real-time alerts for Ludhiana — roads, power, emergencies' },
+  { id:'u5', name:'Amrit Sidhu',       handle:'@amrit_dev',    av:'AS', color:'#3A5BFF', verified:false, bio:'Software dev | Building NearHai 🚀 | Ludhiana born' },
+  { id:'u6', name:'Farmers Market',    handle:'@ldh_farmers',  av:'🌾', color:'#16A34A', verified:true,  bio:'Sector 32 Farmers Market | Every Saturday 7AM' },
+  { id:'u7', name:'Deepika Nair',      handle:'@deepika_ldh',  av:'DN', color:'#EC4899', verified:false, bio:'Community organizer | Events, Melas, Culture ✨' },
+  { id:'u8', name:'Tech Ludhiana',     handle:'@tech_ldh',     av:'⚡', color:'#06B6D4', verified:true,  bio:'Ludhiana\'s startup & tech community hub' }
+];
+
+const NW_POSTS = [
+  {
+    id:'p1', uid:'u4', time:'3m', cat:'Alert', catColor:'#EF4444',
+    text:'🚨 TRAFFIC ALERT: Major jam on Ferozepur Road near Bus Stand due to VIP movement. Expect 30–40 min delays. Alternate via GT Road recommended.',
+    tags:['#TrafficAlert','#Ferozepur Road','#Ludhiana'],
+    loc:'Ferozepur Road, Ludhiana',
+    likes:248, reposts:112, comments:34, views:4200,
+    media:null,
+    replies:[
+      {uid:'u2', text:'We have deployed additional traffic personnel. Situation should clear in 45 mins.', time:'2m'},
+      {uid:'u5', text:'Confirmed, taking GT Road bypass. Much better 👍', time:'1m'}
+    ]
+  },
+  {
+    id:'p2', uid:'u1', time:'12m', cat:'News', catColor:'#3A5BFF',
+    text:'BREAKING: New flyover connecting Model Town to BRS Nagar inaugurated today. Commute time expected to cut by 50%. Full report on Tribune tomorrow morning. 🎉',
+    tags:['#Infrastructure','#ModelTown','#BRSNagar','#Ludhiana'],
+    loc:'Model Town, Ludhiana',
+    likes:591, reposts:203, comments:88, views:12000,
+    media:{ type:'banner', emoji:'🌉', label:'New BRS Nagar Flyover — Inaugurated Today' },
+    replies:[
+      {uid:'u5', text:'Finally!! This was needed for so long. Great reporting @priya_ldh', time:'10m'},
+      {uid:'u7', text:'Can\'t wait to use this route tomorrow!', time:'8m'},
+      {uid:'u3', text:'Already planning the first dhaba crawl across the flyover 😂', time:'5m'}
+    ]
+  },
+  {
+    id:'p3', uid:'u3', time:'28m', cat:'Food', catColor:'#F97316',
+    text:'📍 Hidden gem alert! Just tried the Amritsari Kulcha at a tiny stall near Sarabha Nagar market. ₹30 for two pieces with butter and chutney. Absolutely unreal. Go before it becomes mainstream!',
+    tags:['#StreetFood','#SaraabhaNagar','#Kulcha','#Ludhiana'],
+    loc:'Sarabha Nagar Market',
+    likes:342, reposts:78, comments:52, views:5600,
+    media:{ type:'banner', emoji:'🫓', label:'Amritsari Kulcha • Sarabha Nagar' },
+    replies:[
+      {uid:'u7', text:'The name is Pappu da dhaba right?? That place is 🔥', time:'20m'},
+      {uid:'u1', text:'Adding to my list immediately!', time:'15m'}
+    ]
+  },
+  {
+    id:'p4', uid:'u2', time:'1h', cat:'Traffic', catColor:'#F97316',
+    text:'🚦 Sunday morning road status:\n✅ GT Road — Clear\n✅ Pakhowal Road — Clear\n⚠️ Gill Road — Light congestion near market\n✅ Ferozepur Road — Normalizing\n\nDrive safe, Ludhiana! 🙏',
+    tags:['#TrafficUpdate','#Sunday','#Ludhiana'],
+    loc:'Ludhiana City',
+    likes:189, reposts:95, comments:12, views:8900,
+    media:null,
+    replies:[
+      {uid:'u4', text:'Thanks for the update, sharing forward!', time:'58m'}
+    ]
+  },
+  {
+    id:'p5', uid:'u6', time:'2h', cat:'Market', catColor:'#22C55E',
+    text:'🌾 This week at the Farmers Market (Sector 32):\n- Fresh strawberries from Himachal: ₹80/250g\n- Organic A2 desi ghee: ₹600/500g\n- Winter garlic: ₹40/250g\n\nSee you Saturday at 7AM! 🌅',
+    tags:['#FarmersMarket','#Organic','#Sector32','#Ludhiana'],
+    loc:'Sector 32 Ground, Ludhiana',
+    likes:143, reposts:67, comments:28, views:3200,
+    media:null,
+    replies:[
+      {uid:'u3', text:'Will definitely pick up the strawberries this Saturday!', time:'1h 45m'},
+      {uid:'u7', text:'Pre-ordering the A2 ghee right now 🙌', time:'1h 30m'}
+    ]
+  },
+  {
+    id:'p6', uid:'u8', time:'3h', cat:'Tech', catColor:'#06B6D4',
+    text:'Exciting news for Ludhiana\'s startup scene! 🚀 CoWork Hub Civil Lines is hosting its monthly tech meetup TOMORROW at 2PM. 3 founders pitching live, networking session, free pizza. 85 seats — register fast!',
+    tags:['#StartupLudhiana','#TechMeetup','#CoWorkHub'],
+    loc:'CoWork Hub, Civil Lines',
+    likes:97, reposts:54, comments:19, views:2100,
+    media:{ type:'banner', emoji:'💡', label:'Tech Meetup — Tomorrow 2PM • CoWork Hub' },
+    replies:[
+      {uid:'u5', text:'Already registered! See everyone there 🙌', time:'2h 50m'}
+    ]
+  },
+  {
+    id:'p7', uid:'u5', time:'4h', cat:'Community', catColor:'#8B5CF6',
+    text:'Just discovered NearHai — this app is changing how I interact with my neighbourhood. Ordered groceries in 35 mins, booked an electrician in 2 taps, and now I\'m reading local news from actual local journalists. This is what hyperlocal should feel like. 🙌\n\n#MadeInLudhiana',
+    tags:['#NearHai','#HyperLocal','#Ludhiana','#MadeInLudhiana'],
+    loc:'Model Town, Ludhiana',
+    likes:412, reposts:88, comments:41, views:7800,
+    media:null,
+    replies:[
+      {uid:'u1', text:'Love to see local tech being celebrated! Great product @amrit_dev 🙏', time:'3h 55m'},
+      {uid:'u8', text:'This is exactly what our city needs. Proud of the team!', time:'3h 40m'}
+    ]
+  }
+];
+
+const NW_TRENDING = [
+  { rank:1, tag:'#FlyoverInauguration', count:'12.4K posts today',  emoji:'🌉', cat:'Infrastructure' },
+  { rank:2, tag:'#TrafficAlert',        count:'8.2K posts today',   emoji:'🚦', cat:'Traffic' },
+  { rank:3, tag:'#DiwaliMela2024',      count:'6.7K posts today',   emoji:'🪔', cat:'Festival' },
+  { rank:4, tag:'#LudhianaStartups',    count:'3.1K posts this week',emoji:'🚀', cat:'Tech' },
+  { rank:5, tag:'#FarmersMarket',       count:'2.8K posts this week',emoji:'🌾', cat:'Market' },
+  { rank:6, tag:'#StreetFoodLdh',       count:'2.2K posts this week',emoji:'🍽️',cat:'Food' },
+  { rank:7, tag:'#NearHai',             count:'1.9K posts this week',emoji:'📍', cat:'App' },
+  { rank:8, tag:'#GillRoadTraffic',     count:'1.4K posts today',   emoji:'🚗', cat:'Traffic' }
+];
+
+let NW_LIKED    = new Set();
+let NW_REPOSTED = new Set();
+let NW_FOLLOWED = new Set();
+let NW_TAB      = 'feed';
+let OPEN_POST_ID = null;
+
+/* ── Helpers ── */
+function nwUser(uid) { return NW_USERS.find(u=>u.id===uid); }
+function nwAv(uid, sz) {
+  const u = nwUser(uid);
+  const inner = u.av.length>2 ? u.av : u.av;
+  return `<div class="pc-avatar" style="background:${u.color};width:${sz}px;height:${sz}px;font-size:${Math.floor(sz*.38)}px">${inner}${u.verified?'<div class="verified-badge">✓</div>':''}</div>`;
+}
+function catBand(cat, color) {
+  return `<span class="pc-cat-band" style="background:${color}18;color:${color}">${cat}</span>`;
+}
+function formatText(txt) {
+  return txt.replace(/\n/g,'<br>');
+}
+function formatLikes(n) { return n>=1000 ? (n/1000).toFixed(1)+'K' : n; }
+
+/* ── Post HTML builder ── */
+function buildPostHTML(p, full=false) {
+  const u = nwUser(p.uid);
+  const liked    = NW_LIKED.has(p.id);
+  const reposted = NW_REPOSTED.has(p.id);
+  let mediaHTML = '';
+  if (p.media) {
+    mediaHTML = `<div class="pc-media"><div class="pc-media-inner"><div style="font-size:46px">${p.media.emoji}</div><div class="pc-media-label">${p.media.label}</div></div></div>`;
+  }
+  const tagsHTML = p.tags.map(t=>`<span class="pc-tag">${t}</span>`).join('');
+  return `
+    <div class="post-card" id="pcard-${p.id}" onclick="openPost('${p.id}')">
+      <div class="pc-top">
+        ${nwAv(p.uid, 42)}
+        <div class="pc-main">
+          <div class="pc-meta">
+            <span class="pc-name">${u.name}</span>
+            <span class="pc-dot">·</span>
+            <span class="pc-handle">${u.handle}</span>
+            <span class="pc-dot">·</span>
+            <span class="pc-time">${p.time}</span>
+            <button class="pc-moreBtn" onclick="event.stopPropagation();toast('⋯ More options')">⋯</button>
+          </div>
+          ${catBand(p.cat, p.catColor)}
+          <div class="pc-loc">📍 ${p.loc}</div>
+          <div class="pc-body">${formatText(p.text)}</div>
+          ${mediaHTML}
+          ${tagsHTML ? `<div class="pc-tags">${tagsHTML}</div>` : ''}
+          <div class="pc-actions" onclick="event.stopPropagation()">
+            <button class="pc-act ${liked?'liked':''}" onclick="toggleLike('${p.id}')">
+              <span class="pc-act-ico">${liked?'❤️':'🤍'}</span>
+              <span class="pc-act-n" id="likes-${p.id}">${formatLikes(p.likes+(liked?1:0))}</span>
+            </button>
+            <button class="pc-act" onclick="openComments('${p.id}')">
+              <span class="pc-act-ico">💬</span>
+              <span class="pc-act-n" id="cmts-${p.id}">${p.comments}</span>
+            </button>
+            <button class="pc-act ${reposted?'reposted':''}" onclick="toggleRepost('${p.id}')">
+              <span class="pc-act-ico">${reposted?'🔁':'↩️'}</span>
+              <span class="pc-act-n" id="rps-${p.id}">${p.reposts+(reposted?1:0)}</span>
+            </button>
+            <button class="pc-act" onclick="toast('🔗 Link copied to clipboard!')">
+              <span class="pc-act-ico">📤</span>
+            </button>
+            <button class="pc-act" onclick="toast('👁️ ${p.views.toLocaleString()} views')">
+              <span class="pc-act-ico">👁️</span>
+              <span class="pc-act-n">${p.views>=1000?(p.views/1000).toFixed(1)+'K':p.views}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── Tabs ── */
+function nwTab(t) {
+  NW_TAB = t;
+  ['feed','trending','discover'].forEach(x=>{
+    document.getElementById(`nwt-${x}`).classList.toggle('active', x===t);
+    document.getElementById(`nw-${x}-pane`).style.display = x===t ? 'block' : 'none';
+  });
+}
+
+/* ── Feed ── */
+function renderFeed() {
+  document.getElementById('nw-feed-list').innerHTML = NW_POSTS.map(p=>buildPostHTML(p)).join('');
+}
+
+/* ── Stories ── */
+function renderStories() {
+  const stored = [
+    {label:'Your Story', own:true},
+    ...NW_USERS.map((u,i)=>({label:u.name.split(' ')[0], av:u.av, color:u.color, seen:i>3}))
+  ];
+  document.getElementById('stories-row').innerHTML = stored.map((s,i)=>{
+    if (s.own) return `<div class="story-item" onclick="toast('📷 Add your story…')"><div class="story-add-ring">+</div><div class="story-name">Add</div></div>`;
+    return `<div class="story-item" onclick="toast('📖 ${s.label}\'s story…')">
+      <div class="story-ring ${s.seen?'seen':''}"><div class="story-inner">${s.av.length>2?s.av:`<span style="font-size:15px;font-weight:700;color:${s.color}">${s.av}</span>`}</div></div>
+      <div class="story-name">${s.label}</div></div>`;
+  }).join('');
+}
+
+/* ── Trending ── */
+function renderTrending() {
+  document.getElementById('nw-trend-list').innerHTML = NW_TRENDING.map(t=>`
+    <div class="trend-item" onclick="toast('🔍 Searching ${t.tag}…')">
+      <div class="trend-rank">${t.rank}</div>
+      <div class="trend-info">
+        <div class="trend-tag">${t.tag}</div>
+        <div class="trend-cnt">${t.cat} · ${t.count}</div>
+      </div>
+      <div class="trend-emoji">${t.emoji}</div>
+    </div>`).join('');
+}
+
+/* ── Who to follow ── */
+function renderWho() {
+  document.getElementById('nw-who-list').innerHTML = NW_USERS.slice(0,5).map(u=>`
+    <div class="who-item">
+      <div class="who-av" style="background:${u.color}">${u.av.length<=2?u.av:'?'}</div>
+      <div class="who-info">
+        <div class="who-name">${u.name}${u.verified?' <span style="color:var(--primary);font-size:12px">✓</span>':''}</div>
+        <div class="who-handle">${u.handle}</div>
+        <div class="who-desc">${u.bio.slice(0,48)}…</div>
+      </div>
+      <button class="follow-btn ${NW_FOLLOWED.has(u.id)?'following':''}" id="fBtn-${u.id}" onclick="toggleFollow('${u.id}')">
+        ${NW_FOLLOWED.has(u.id)?'Following':'Follow'}
+      </button>
+    </div>`).join('');
+}
+
+/* ── Interactions ── */
+function toggleLike(pid) {
+  const p = NW_POSTS.find(x=>x.id===pid);
+  if (NW_LIKED.has(pid)) { NW_LIKED.delete(pid); }
+  else { NW_LIKED.add(pid); }
+  const liked = NW_LIKED.has(pid);
+  // update all instances
+  document.querySelectorAll(`#pcard-${pid} .pc-act`).forEach((btn,i)=>{
+    if(i===0){ btn.className=`pc-act ${liked?'liked':''}`;
+      btn.querySelector('.pc-act-ico').textContent = liked?'❤️':'🤍';
+      btn.querySelector('.pc-act-n').textContent = formatLikes(p.likes+(liked?1:0));
+    }
+  });
+  if(liked) toast('❤️ Liked!');
+}
+function toggleRepost(pid) {
+  const p = NW_POSTS.find(x=>x.id===pid);
+  if (NW_REPOSTED.has(pid)) NW_REPOSTED.delete(pid);
+  else NW_REPOSTED.add(pid);
+  const rp = NW_REPOSTED.has(pid);
+  document.querySelectorAll(`#pcard-${pid} .pc-act`).forEach((btn,i)=>{
+    if(i===2){ btn.className=`pc-act ${rp?'reposted':''}`;
+      btn.querySelector('.pc-act-ico').textContent = rp?'🔁':'↩️';
+      btn.querySelector('.pc-act-n').textContent = p.reposts+(rp?1:0);
+    }
+  });
+  if(rp) toast('🔁 Reposted to your followers!');
+}
+function toggleFollow(uid) {
+  if(NW_FOLLOWED.has(uid)) NW_FOLLOWED.delete(uid);
+  else NW_FOLLOWED.add(uid);
+  const btn = document.getElementById(`fBtn-${uid}`);
+  const following = NW_FOLLOWED.has(uid);
+  btn.textContent = following ? 'Following' : 'Follow';
+  btn.classList.toggle('following', following);
+  const u = nwUser(uid);
+  toast(following ? `✅ Following ${u.name}` : `Unfollowed ${u.name}`);
+}
+
+/* ── Post detail ── */
+function openPost(pid) {
+  OPEN_POST_ID = pid;
+  const p = NW_POSTS.find(x=>x.id===pid);
+  const u = nwUser(p.uid);
+  const repliesHTML = p.replies.map(r=>{
+    const ru = nwUser(r.uid);
+    return `<div class="comment-item" style="border-bottom:1px solid #F9FAFB">
+      <div class="cm-av" style="background:${ru.color}">${ru.av}</div>
+      <div class="cm-body">
+        <div class="cm-name">${ru.name} <span style="color:var(--text-sec);font-weight:400;font-size:11.5px">${ru.handle} · ${r.time}</span></div>
+        <div class="cm-text">${r.text}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('po-body').innerHTML = buildPostHTML(p, true) + `
+    <div style="padding:12px 14px;border-top:4px solid var(--bg)">
+      <div style="font-size:13.5px;font-weight:700;margin-bottom:10px">💬 ${p.replies.length} Replies</div>
+      ${repliesHTML}
+    </div>`;
+  document.querySelector('.post-overlay').classList.add('open');
+}
+function closePostOverlay() {
+  document.querySelector('.post-overlay').classList.remove('open');
+}
+
+/* ── Comments ── */
+function openComments(pid) {
+  OPEN_POST_ID = pid;
+  const p = NW_POSTS.find(x=>x.id===pid);
+  document.getElementById('comment-list').innerHTML = p.replies.map(r=>{
+    const u = nwUser(r.uid);
+    return `<div class="comment-item">
+      <div class="cm-av" style="background:${u.color}">${u.av}</div>
+      <div class="cm-body">
+        <div class="cm-name">${u.name} <span style="color:var(--text-sec);font-weight:400">${u.handle}</span></div>
+        <div class="cm-text">${r.text}</div>
+        <div class="cm-time">${r.time} ago</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('comment-overlay').classList.add('on');
+  setTimeout(()=>document.getElementById('cm-input').focus(), 300);
+}
+function closeComments(e) {
+  if (!e || e.target===document.getElementById('comment-overlay'))
+    document.getElementById('comment-overlay').classList.remove('on');
+}
+function sendComment() {
+  const inp = document.getElementById('cm-input');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  const p = NW_POSTS.find(x=>x.id===OPEN_POST_ID);
+  if (p) {
+    p.replies.push({ uid:'u5', text:txt, time:'just now' });
+    p.comments++;
+    document.querySelectorAll(`#cmts-${p.id}`).forEach(el=>el.textContent=p.comments);
+  }
+  inp.value='';
+  toast('✅ Reply posted!');
+  closeComments();
+}
+
+/* ── Composer ── */
+function focusComposer() {
+  nwTab('feed');
+  const inp = document.getElementById('composer-inp');
+  inp.focus();
+  document.getElementById('composer-bar').style.display='flex';
+}
+function addComposerTag(emoji) { document.getElementById('composer-inp').focus(); toast(`${emoji} attachment added`); }
+function submitPost() {
+  const inp = document.getElementById('composer-inp');
+  const txt = inp.textContent.trim();
+  if (!txt) { toast('⚠️ Write something first!'); return; }
+  const newPost = {
+    id:'p_'+Date.now(), uid:'u5', time:'now', cat:'Community', catColor:'#8B5CF6',
+    text:txt, tags:['#NearHai','#Ludhiana'], loc:'Model Town, Ludhiana',
+    likes:0, reposts:0, comments:0, views:1, media:null, replies:[]
+  };
+  NW_POSTS.unshift(newPost);
+  inp.textContent = '';
+  document.getElementById('composer-bar').style.display='none';
+  renderFeed();
+  toast('✅ Posted to NearWorld!');
+  document.getElementById('nw-body').scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── Composer focus handler ── */
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('composer-inp').addEventListener('focus', ()=>{
+    document.getElementById('composer-bar').style.display='flex';
+  });
+});
+
+/* ── EXPLORE CATEGORIES (for discover tab) ── */
+const CATS = [
+  {emoji:'🛍️', name:'Shopping',  count:'24 stores',    color:'#DCFCE7', mode:'buy'},
+  {emoji:'🚗', name:'Transport', count:'8 vehicles',   color:'#FFF7ED', mode:'travel'},
+  {emoji:'🔧', name:'Services',  count:'12 nearby',    color:'#F5F3FF', mode:'services'},
+  {emoji:'🎉', name:'Events',    count:'5 today',      color:'#EFF6FF', mode:'explore'},
+  {emoji:'🏥', name:'Emergency', count:'3 nearby',     color:'#FEF2F2', mode:'emergency'},
+  {emoji:'🍽️', name:'Food',     count:'31 places',    color:'#FFFBEB', mode:'buy'},
+  {emoji:'💊', name:'Health',    count:'7 pharmacies', color:'#F0FDF4', mode:'emergency'},
+  {emoji:'📚', name:'Education', count:'6 centers',    color:'#EEF2FF', mode:'buy'}
+];
+function renderExplore() {
+  renderFeed();
+  renderStories();
+  renderTrending();
+  renderWho();
+  document.getElementById('ex-grid').innerHTML = CATS.map(c=>`
+    <div class="ex-card" style="background:${c.color}" onclick="goMode('${c.mode}')">
+      <div class="ex-ic">${c.emoji}</div>
+      <div class="ex-nm">${c.name}</div>
+      <div class="ex-cnt">${c.count}</div>
+    </div>`).join('');
+}
+function goMode(mode) { switchTab('near'); setMode(mode); }
+
+/* ─── UTILITIES ─── */
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('on'), 3200);
+}
+function locateMe() {
+  map.setView([USER_LAT,USER_LNG],15,{animate:true});
+  toast('📍 Centered on your location');
+}
+
+/* ─── SPLASH + INIT ─── */
+document.addEventListener('DOMContentLoaded', ()=>{
+  renderActs();
+  renderExplore();
+  initMap();
+  setTimeout(()=>{
+    document.getElementById('splash').classList.add('gone');
+    setTimeout(()=>toast('👋 Welcome to NearHai, Rahul!'), 500);
+  }, 2000);
+});
+</script>
+</body>
+</html>
