@@ -253,5 +253,3 @@ The prototype demonstrates:
 prototype link: https://skisadeveloper.github.io/NearHai-ProtoType/
 
 ---
-
-# Repository Structure
