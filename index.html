@@ -59,17 +59,29 @@
 
     /* ── MAP ── */
     #map { position:absolute; inset:0; z-index:1; }
-    .leaflet-bottom.leaflet-left  { bottom:calc(var(--nav-h) + 14px) !important; left:14px !important; }
     .leaflet-bottom.leaflet-right { display:none !important; }
-    .leaflet-control-zoom { border:none !important; box-shadow:var(--shadow) !important; border-radius:13px !important; overflow:hidden; }
-    .leaflet-control-zoom a {
-      border-radius:0 !important; margin-bottom:0 !important;
-      width:40px !important; height:40px !important; line-height:40px !important;
-      color:var(--text) !important; font-weight:700 !important; font-size:20px !important;
-      border-bottom:1px solid #F3F4F6 !important;
-    }
-    .leaflet-control-zoom-out { border-bottom:none !important; }
+    .leaflet-control-zoom { display:none !important; }
     .leaflet-control-attribution { font-size:9px !important; }
+
+    /* ── CUSTOM ZOOM BUTTONS ── */
+    .zoom-btns {
+      position:absolute; left:14px; z-index:140;
+      bottom:calc(var(--nav-h) + 14px);
+      display:flex; flex-direction:column;
+      border-radius:13px; overflow:hidden;
+      box-shadow:0 2px 10px rgba(0,0,0,.13);
+      transition:bottom .35s cubic-bezier(0.32,0.72,0,1);
+    }
+    .zoom-btns.shifted { bottom:calc(var(--nav-h) + 190px); }
+    .zoom-btn {
+      width:40px; height:40px; background:white; border:none;
+      font-size:20px; font-weight:700; color:#1A1A2E;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:background .12s; line-height:1; font-family:sans-serif;
+    }
+    .zoom-btn:first-child { border-bottom:1px solid #F3F4F6; }
+    .zoom-btn:hover { background:#F6F7FB; }
+    .zoom-btn:active { background:#E5E7EB; }
 
     /* ── TOP OVERLAY ── */
     .top-overlay {
@@ -142,7 +154,9 @@
       font-size:19px; cursor:pointer; transition:bottom .35s var(--ease), transform .15s;
     }
     .fab-locate:active { transform:scale(.92); }
-    .fab-locate.shifted { bottom:calc(var(--nav-h) + 170px); }
+    .fab-locate.shifted { bottom:calc(var(--nav-h) + 190px); }
+    /* When waiting FAB is also visible, push locate higher */
+    .fab-locate.shifted.travel-mode { bottom:calc(var(--nav-h) + 248px); }
 
     /* ── BOTTOM SHEET ── */
     .bs-backdrop {
@@ -325,7 +339,7 @@
       display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity .3s;
     }
     #sched-modal.on { opacity:1; pointer-events:all; }
-    .modal-sheet { background:white; border-radius:22px 22px 0 0; padding:22px 18px 32px; width:100%; }
+    .modal-sheet { background:white; border-radius:22px 22px 0 0; padding:22px 18px calc(var(--nav-h) + 24px); width:100%; max-height:80vh; overflow-y:auto; }
     .modal-title { font-size:17px; font-weight:700; margin-bottom:18px; }
     .time-slots { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
     .t-slot {
@@ -353,7 +367,7 @@
       width:46px; height:46px; border-radius:15px; background:var(--primary);
       display:flex; align-items:center; justify-content:center; color:white; font-size:21px;
     }
-    .nav-btn.near-btn.active .nav-ico { box-shadow:0 4px 16px rgba(58,91,255,.4); }
+    .nav-btn.near-btn.active .nav-ico { box-shadow:0 4px 16px rgba(58,91,255,.4); transform:none !important; }
     .nav-badge {
       position:absolute; top:-3px; right:-3px; width:16px; height:16px;
       border-radius:50%; background:#EF4444; color:white; font-size:9px; font-weight:700;
@@ -439,7 +453,7 @@
       transition:transform .2s, bottom .35s var(--ease);
     }
     #cart-fab.visible { display:flex; }
-    #cart-fab.shifted { bottom:calc(var(--nav-h) + 170px); }
+    #cart-fab.shifted { bottom:calc(var(--nav-h) + 190px); }
     #cart-fab:active { transform:translateX(-50%) scale(.96); }
     .cart-fab-count {
       background:#EF4444; color:white; font-size:11px; font-weight:800;
@@ -872,14 +886,54 @@
 
     /* ── Post detail overlay ── */
     .post-overlay {
-      position:absolute; inset:0; bottom:var(--nav-h); background:white; z-index:200;
+      position:absolute; inset:0; bottom:0; background:white; z-index:200;
       transform:translateX(100%); transition:transform .32s var(--ease); display:flex; flex-direction:column;
     }
     .post-overlay.open { transform:none; }
     .po-header { display:flex; align-items:center; gap:14px; padding:50px 14px 12px; border-bottom:1px solid #F3F4F6; flex-shrink:0; }
     .po-back { background:none; border:none; font-size:24px; cursor:pointer; color:var(--text); line-height:1; }
     .po-title { font-size:16px; font-weight:700; }
-    .po-body { overflow-y:auto; flex:1; }
+    .po-body { overflow-y:auto; flex:1; padding-bottom:80px; }
+    /* Compose popup inside post overlay */
+    .po-compose-fab {
+      position:absolute; bottom:calc(var(--nav-h) + 14px); right:16px; z-index:10;
+      width:48px; height:48px; border-radius:50%; background:var(--primary); border:none;
+      display:flex; align-items:center; justify-content:center; font-size:20px;
+      box-shadow:0 6px 20px rgba(58,91,255,.4); cursor:pointer; transition:transform .15s;
+    }
+    .po-compose-fab:active { transform:scale(.92); }
+    /* Twitter-style compose modal */
+    #compose-modal {
+      position:absolute; inset:0; z-index:210; background:rgba(0,0,0,.45);
+      display:none; align-items:flex-end;
+    }
+    #compose-modal.on { display:flex; }
+    .compose-sheet {
+      background:white; border-radius:22px 22px 0 0; width:100%;
+      padding:18px 16px calc(var(--nav-h) + 16px);
+      animation: cSlideUp .3s var(--ease) both;
+    }
+    @keyframes cSlideUp { from{transform:translateY(100%)} to{transform:none} }
+    .compose-hd {
+      display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
+    }
+    .compose-hd-title { font-size:16px; font-weight:700; }
+    .compose-close {
+      width:30px; height:30px; border-radius:50%; background:#F3F4F6;
+      border:none; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    }
+    .compose-area {
+      display:flex; gap:11px; margin-bottom:12px;
+    }
+    .compose-textarea {
+      flex:1; min-height:80px; font-family:'DM Sans',sans-serif; font-size:15px;
+      color:var(--text); outline:none; line-height:1.55; resize:none; border:none;
+    }
+    .compose-textarea::placeholder { color:#9CA3AF; }
+    .compose-tools-row {
+      display:flex; align-items:center; justify-content:space-between;
+      border-top:1px solid #F3F4F6; padding-top:11px;
+    }
 
     /* ── FAB ── */
     .nw-fab {
@@ -954,7 +1008,7 @@
 
     /* FAB flag */
     .fab-flag {
-      position:absolute; bottom:calc(var(--nav-h) + 70px); left:14px; z-index:120;
+      position:absolute; bottom:calc(var(--nav-h) + 110px); left:14px; z-index:120;
       padding:9px 14px; border-radius:22px; background:#FBBF24; border:none;
       display:flex; align-items:center; gap:7px;
       font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; color:#1A1A2E;
@@ -963,11 +1017,12 @@
     }
     .fab-flag.on { opacity:1; pointer-events:all; }
     .fab-flag.active { background:#22C55E; color:white; box-shadow:0 4px 16px rgba(34,197,94,.4); }
+    .fab-flag.shifted { bottom:calc(var(--nav-h) + 296px); transition:all .35s cubic-bezier(0.32,0.72,0,1); }
 
     /* ══ MODE PANEL ══ */
     #mode-panel {
       position:absolute;
-      bottom:var(--nav-h);
+      bottom:0;
       left:0; right:0;
       z-index:130;
       display:flex; flex-direction:column;
@@ -982,9 +1037,10 @@
       background:white;
       border-radius:20px 20px 0 0;
       box-shadow:0 -4px 24px rgba(0,0,0,.13);
-      padding:0 16px 0;
+      padding:0 16px 8px;
       flex-shrink:0;
     }
+    /* Remove the ::after pseudo fill — handled by padding-bottom now */
     .mp-handle-row {
       display:flex; align-items:center; gap:10px;
       padding:10px 0 6px; cursor:pointer;
@@ -1093,7 +1149,7 @@
           autocomplete="off" autocorrect="off" spellcheck="false"
           oninput="onSearchInput(this.value)" onfocus="onSearchFocus()" onblur="onSearchBlur()">
         <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
-        <div class="search-avatar" onclick="switchTab('profile')">RK</div>
+        <div class="search-avatar" onclick="switchTab('profile')">A</div>
         <div id="search-results"></div>
       </div>
       <div class="intent-pills" id="intent-pills">
@@ -1106,6 +1162,11 @@
       </div>
     </div>
     <button class="fab-locate" onclick="locateMe()">🎯</button>
+    <!-- Custom zoom controls (outside #map to avoid stacking context issue) -->
+    <div class="zoom-btns" id="zoom-btns">
+      <button class="zoom-btn" onclick="map.zoomIn()">+</button>
+      <button class="zoom-btn" onclick="map.zoomOut()">−</button>
+    </div>
     <!-- Travel: Flag waiting button -->
     <button class="fab-flag" id="fab-flag" onclick="toggleFlagPanel()">🚏 I'm Waiting Here</button>
     <!-- Flag panel -->
@@ -1163,7 +1224,7 @@
           <div class="nw-logo">📍 NearWorld</div>
           <div class="nw-head-right">
             <button class="nw-icon-btn" onclick="toast('🔔 Notifications opened')">🔔</button>
-            <div class="nw-self-av" onclick="switchTab('profile')">RK</div>
+            <div class="nw-self-av" onclick="switchTab('profile')">A</div>
           </div>
         </div>
         <div class="nw-tabs">
@@ -1225,6 +1286,35 @@
         <span class="po-title">Post</span>
       </div>
       <div class="po-body" id="po-body"></div>
+      <button class="po-compose-fab" onclick="openReplyToAuthor()">✍️</button>
+      <!-- Reply-to-author modal inside overlay -->
+      <div id="compose-modal" onclick="closeComposeModal(event)">
+        <div class="compose-sheet" onclick="event.stopPropagation()">
+          <div class="compose-hd">
+            <div>
+              <span class="compose-hd-title">💬 Reply</span>
+              <div id="compose-reply-to" style="font-size:12px;color:var(--text-sec);margin-top:2px"></div>
+            </div>
+            <button class="compose-close" onclick="closeComposeModal()">✕</button>
+          </div>
+          <!-- Replying-to post preview -->
+          <div id="compose-quoting" style="margin-bottom:12px;padding:10px 12px;border-radius:12px;background:var(--bg);border-left:3px solid var(--primary);display:none">
+            <div id="compose-quote-name" style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:3px"></div>
+            <div id="compose-quote-text" style="font-size:12px;color:var(--text-sec);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical"></div>
+          </div>
+          <div class="compose-area">
+            <div class="nw-self-av sm">RK</div>
+            <textarea class="compose-textarea" id="compose-modal-text" placeholder="Write your reply…"></textarea>
+          </div>
+          <div class="compose-tools-row">
+            <div style="display:flex;gap:4px">
+              <button class="c-tool" onclick="toast('📷 Photo added')">📷</button>
+              <button class="c-tool" onclick="toast('📍 Location added')">📍</button>
+            </div>
+            <button class="post-btn" onclick="submitModalPost()">Reply</button>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -1242,8 +1332,8 @@
   <div id="screen-profile" class="screen">
     <div class="ss">
       <div class="prof-hd">
-        <div class="prof-av">RK</div>
-        <div class="prof-nm">Rahul Kumar</div>
+        <div class="prof-av">A</div>
+        <div class="prof-nm">Arya</div>
         <div class="prof-loc">📍 Model Town, Ludhiana, Punjab</div>
       </div>
       <div class="prof-stats">
@@ -1309,7 +1399,7 @@
       </div>
       <div class="comment-list" id="comment-list"></div>
       <div class="cm-compose">
-        <div class="nw-self-av sm">RK</div>
+        <div class="nw-self-av sm">A</div>
         <input class="cm-input" id="cm-input" placeholder="Write a reply…">
         <button class="cm-send" onclick="sendComment()">Send</button>
       </div>
@@ -1346,7 +1436,7 @@
           <div id="cpd-instant" class="del-card sel" style="flex:1;flex-direction:column;align-items:flex-start;gap:3px" onclick="selCartDel('instant')">
             <div style="font-size:18px">⚡</div>
             <div style="font-size:12.5px;font-weight:700">Instant</div>
-            <div style="font-size:11px;color:var(--text-sec)">30–45 min • ₹30</div>
+            <div style="font-size:11px;color:var(--text-sec)">10–30 min • ₹30</div>
           </div>
           <div id="cpd-routine" class="del-card" style="flex:1;flex-direction:column;align-items:flex-start;gap:3px" onclick="selCartDel('routine')">
             <div style="font-size:18px">📦</div>
@@ -1426,7 +1516,7 @@
           <div class="del-type-card active" id="dty-instant" onclick="setCoDelivery('instant')">
             <div class="dtc-ico">⚡</div>
             <div class="dtc-name">Instant</div>
-            <div class="dtc-desc">30–45 min<br>Rider nearby</div>
+            <div class="dtc-desc">10–30 min<br>Rider nearby</div>
             <div class="dtc-price">+₹30</div>
           </div>
           <div class="del-type-card" id="dty-routine" onclick="setCoDelivery('routine')">
@@ -1600,6 +1690,29 @@ const DATA = {
         {name:'NCERT Class 12', price:480, emoji:'📚', desc:'Complete set, all subjects'},
         {name:'Premium Notebook',price:95, emoji:'📓', desc:'A4, 200 pages, hardbound'},
         {name:'Camlin Geometry', price:120,emoji:'📐', desc:'Gold set with case'}
+      ]},
+    { id:'r1', lat:30.9055, lng:75.8580, name:'Punjabi Tadka', dist:'0.4 km', rating:4.7, cat:'Restaurant', open:true, emoji:'🍛',
+      products:[
+        {name:'Dal Makhani',      price:180, emoji:'🫕', desc:'Slow-cooked black lentils, butter & cream'},
+        {name:'Butter Chicken',   price:260, emoji:'🍗', desc:'Tender chicken in rich tomato gravy'},
+        {name:'Garlic Naan',      price:40,  emoji:'🫓', desc:'4 pieces, tandoor-fresh'},
+        {name:'Paneer Tikka',     price:220, emoji:'🧀', desc:'Chargrilled cottage cheese, mint chutney'},
+        {name:'Lassi',            price:60,  emoji:'🥛', desc:'Sweet or salted, 300ml'}
+      ]},
+    { id:'r2', lat:30.9003, lng:75.8555, name:'Chhotu Dhaba', dist:'0.8 km', rating:4.4, cat:'Restaurant', open:true, emoji:'🍲',
+      products:[
+        {name:'Rajma Chawal',     price:120, emoji:'🍛', desc:'Home-style kidney beans with steamed rice'},
+        {name:'Aloo Paratha',     price:70,  emoji:'🫓', desc:'2 stuffed flatbreads, butter & pickle'},
+        {name:'Chhole Bhature',   price:100, emoji:'🥘', desc:'Spicy chickpeas with 2 puffy bhature'},
+        {name:'Masala Chai',      price:20,  emoji:'☕', desc:'Cutting chai, ginger & cardamom'},
+        {name:'Mango Shake',      price:80,  emoji:'🥭', desc:'Fresh Alphonso mango, 350ml'}
+      ]},
+    { id:'r3', lat:30.9038, lng:75.8625, name:'Pizza Point', dist:'1.2 km', rating:4.1, cat:'Restaurant', open:true, emoji:'🍕',
+      products:[
+        {name:'Margherita Pizza', price:199, emoji:'🍕', desc:'7-inch, loaded mozzarella'},
+        {name:'Paneer Pizza',     price:249, emoji:'🧀', desc:'7-inch, tandoori paneer & bell pepper'},
+        {name:'Garlic Bread',     price:99,  emoji:'🥖', desc:'6 slices with dips'},
+        {name:'Cold Coffee',      price:89,  emoji:'☕', desc:'Iced, blended, 400ml'}
       ]}
   ],
   travel: [
@@ -1642,11 +1755,10 @@ let travelRouteLines = [], travelVehicleMarkers = [], travelAnimTimers = [];
 let waitingFlagMarker = null, flaggedRouteId = null;
 
 function initMap() {
-  map = L.map('map', { center:[USER_LAT, USER_LNG], zoom:15, zoomControl:false });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  map = L.map('map', { center:[USER_LAT, USER_LNG], zoom:15, zoomControl:false });  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     attribution:'© OpenStreetMap © CARTO', maxZoom:20
   }).addTo(map);
-  L.control.zoom({ position:'bottomleft' }).addTo(map);
+  // zoom handled by custom #zoom-btns outside #map stacking context
   uMarker = L.marker([USER_LAT, USER_LNG], {
     icon: L.divIcon({ html:'<div class="user-wrap"><div class="u-pulse"></div><div class="u-dot"></div></div>', className:'', iconSize:[22,22], iconAnchor:[11,11] }),
     zIndexOffset:1000
@@ -1654,7 +1766,7 @@ function initMap() {
   loadAllMarkers();
 }
 
-/* Default Near view — all markers from all modes */
+/* Default Near view — all markers from all modes + travel animation */
 function loadAllMarkers() {
   clearTravelAnimations();
   curMarkers.forEach(m=>map.removeLayer(m)); curMarkers = [];
@@ -1670,14 +1782,25 @@ function loadAllMarkers() {
       curMarkers.push(m);
     });
   });
-  DATA.travel.forEach(d => {
-    const m = L.marker([d.lat,d.lng], {
+  // Travel: draw routes + animate vehicles (same as travel mode)
+  DATA.travel.forEach(v => {
+    const line = L.polyline(v.waypoints, { color:v.routeColor, weight:3, opacity:.4, dashArray:'6 5' }).addTo(map);
+    travelRouteLines.push(line);
+    const vm = L.marker([v.lat,v.lng], {
       icon: L.divIcon({
-        html:`<div class="mm" style="background:${MODE_CFG.travel.color};width:30px;height:30px"><span style="font-size:13px">${d.emoji}</span></div>`,
-        className:'', iconSize:[30,30], iconAnchor:[15,30]
-      })
-    }).addTo(map).on('click', ()=>openBS(d,'travel'));
-    curMarkers.push(m);
+        html:`<div style="background:${v.routeColor};width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.25)">${v.emoji}</div>`,
+        className:'', iconSize:[30,30], iconAnchor:[15,15]
+      }), zIndexOffset:400
+    }).addTo(map).on('click', ()=>openBS(v,'travel'));
+    travelVehicleMarkers.push(vm); curMarkers.push(vm);
+    let wpIdx=0, segStep=0, segSteps=40;
+    const timer = setInterval(()=>{
+      const from=v.waypoints[wpIdx], toIdx=(wpIdx+1)%v.waypoints.length, to=v.waypoints[toIdx];
+      segStep++;
+      vm.setLatLng([from[0]+(to[0]-from[0])*(segStep/segSteps), from[1]+(to[1]-from[1])*(segStep/segSteps)]);
+      if(segStep>=segSteps){ segStep=0; wpIdx=toIdx; }
+    }, 200);
+    travelAnimTimers.push(timer);
   });
 }
 
@@ -1837,16 +1960,30 @@ function animTravelRide(v) {
 }
 
 
-/* ─── MODE SWITCHING ─── */
+/* ─── ZOOM SHIFT ─── */
+function shiftZoom(up) {
+  const zb = document.getElementById('zoom-btns');
+  if (zb) zb.classList.toggle('shifted', up);
+  // Also shift the flag FAB if visible
+  const flag = document.getElementById('fab-flag');
+  if (flag && flag.classList.contains('on')) flag.classList.toggle('shifted', up);
+  // In travel mode, push locate FAB even higher
+  const loc = document.querySelector('.fab-locate');
+  if (loc) {
+    loc.classList.toggle('shifted', up);
+    loc.classList.toggle('travel-mode', up && S.mode === 'travel');
+  }
+}
 function setModeAll() {
   if (S.mode === 'travel') clearWaitingFlag();
   S.mode = 'all';
   document.body.className = '';
   document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('active', p.dataset.mode==='all'));
   closeBS(); closeFlagPanel();
-  hideModePanel();
   loadAllMarkers();
   document.getElementById('fab-flag').classList.remove('on');
+  renderNearPanel();
+  shiftZoom(true);
 }
 
 function setMode(mode) {
@@ -1858,24 +1995,42 @@ function setMode(mode) {
   loadMarkers(mode);
   renderModePanel(mode);
   document.getElementById('fab-flag').classList.toggle('on', mode==='travel');
-  // shift locate FAB above panel
-  document.querySelector('.fab-locate').classList.add('shifted');
+  shiftZoom(true);
   toast(`${MODE_CFG[mode].icon} ${mode.charAt(0).toUpperCase()+mode.slice(1)} mode active`);
+}
+
+function updateControlsVisibility(hidden) {
+  const zb = document.getElementById('zoom-btns');
+  const loc = document.querySelector('.fab-locate');
+  const flag = document.getElementById('fab-flag');
+  const op = hidden ? '0' : '';
+  const pe = hidden ? 'none' : '';
+  if (zb) { zb.style.opacity = op; zb.style.pointerEvents = pe; }
+  if (loc) { loc.style.opacity = op; loc.style.pointerEvents = pe; }
+  if (flag) { flag.style.opacity = op; flag.style.pointerEvents = pe; }
 }
 
 function hideModePanel() {
   const panel = document.getElementById('mode-panel');
+  panel.style.transform = '';   // clear any inline override from openBS
   panel.classList.remove('visible');
   mpExpanded = false;
   document.getElementById('mp-expanded-body').classList.remove('open');
   document.querySelector('.fab-locate').classList.remove('shifted');
+  updateControlsVisibility(false);
+  shiftZoom(false);
 }
 
 function closeModePanel() {
   hideModePanel();
-  // visually reset pills — none active except Near
-  document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.mode === 'all'));
-  // keep map in current filtered mode but remove panel — user still sees filtered markers
+  if (S.mode !== 'all') {
+    if (S.mode === 'travel') clearWaitingFlag();
+    S.mode = 'all';
+    document.body.className = '';
+    document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.mode === 'all'));
+    loadAllMarkers();
+    document.getElementById('fab-flag').classList.remove('on');
+  }
 }
 
 /* ─── MODE PANEL ─── */
@@ -1885,6 +2040,7 @@ function renderModePanel(mode) {
   const panel = document.getElementById('mode-panel');
   mpExpanded = false;
   document.getElementById('mp-expanded-body').classList.remove('open');
+  updateControlsVisibility(false);
   const btn = document.getElementById('mp-expand-btn');
   btn.classList.remove('expanded');
   btn.querySelector('span').textContent = 'See All';
@@ -1928,7 +2084,7 @@ function renderModePanel(mode) {
 function getMpMeta(d, mode) {
   switch(mode) {
     case 'buy':
-      return { name:d.name, sub:`${d.cat} • ${d.products.length} products`, stat:`⭐ ${d.rating}`, dist:d.dist, desc:`${d.products.map(p=>p.name).slice(0,2).join(', ')}…` };
+      return { name:d.name, sub:`${d.cat} • ${d.products.length} items`, stat:`⭐ ${d.rating}`, dist:d.dist, desc:`${d.products.map(p=>p.name).slice(0,2).join(', ')}…` };
     case 'travel':
       return { name:`${d.name} — ${d.drvName}`, sub:d.routeName, stat:`${d.totalSeats-d.bookedSeats} seats`, dist:d.eta, desc:`${d.plate} • ⭐ ${d.rating} • ₹${d.ppk}/km` };
     case 'services':
@@ -1945,6 +2101,7 @@ function toggleModePanel() {
   document.getElementById('mp-expanded-body').classList.toggle('open', mpExpanded);
   document.getElementById('mp-expand-btn').classList.toggle('expanded', mpExpanded);
   document.getElementById('mp-expand-btn').querySelector('span').textContent = mpExpanded ? 'Collapse' : 'See All';
+  updateControlsVisibility(mpExpanded);
 }
 
 function mpTapItem(id, mode) {
@@ -1976,6 +2133,7 @@ function closeBS() {
   document.getElementById('bs-bd').classList.remove('on');
   if (_panelWasVisible) {
     document.getElementById('mode-panel').style.transform = '';
+    shiftZoom(true);
   }
 }
 function buildSheet(d, mode) {
@@ -1995,7 +2153,7 @@ function sheetBuy(s) {
     return `
     <div class="product-card" id="pc${i}" onclick="selProd(${i})">
       <div class="prod-emoji">${p.emoji}</div>
-      <div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-price">₹${p.price}</div></div>
+      <div class="prod-info"><div class="prod-name">${p.name}</div><div class="prod-price" style="display:flex;flex-direction:column;gap:2px"><span>₹${p.price}</span>${p.desc?`<span style="font-size:10.5px;color:var(--text-sec);font-weight:400">${p.desc}</span>`:''}</div></div>
       <button class="btn-cart ${inCart?'in-cart':''}" id="pca${i}" onclick="event.stopPropagation();cartToggle('${s.id}',${i})">${inCart?'✓ Added':'+ Cart'}</button>
       <button class="btn-sel" id="ps${i}" onclick="event.stopPropagation();selProd(${i})">Select</button>
     </div>`;
@@ -2013,7 +2171,7 @@ function sheetBuy(s) {
       </div>
     </div>
     <div class="divider"></div>
-    <div class="sec-title">Popular Products</div>
+    <div class="sec-title">${s.cat==='Restaurant' ? '🍽️ Menu' : '🛍️ Products'}</div>
     <div class="product-list">${prods}</div>
     <div id="del-sec" style="display:none">
       <div class="divider"></div>
@@ -2021,7 +2179,7 @@ function sheetBuy(s) {
       <div class="del-opts">
         <div class="del-card" id="dc-i" onclick="selDel('instant')">
           <div class="del-icon">⚡</div>
-          <div class="del-info"><div class="del-name">Instant Delivery</div><div class="del-desc">30–45 min • Rider nearby</div></div>
+          <div class="del-info"><div class="del-name">Instant Delivery</div><div class="del-desc">10–30 min • Rider nearby</div></div>
           <div class="del-price">₹30</div>
         </div>
         <div class="del-card" id="dc-r" onclick="selDel('routine')">
@@ -2032,7 +2190,6 @@ function sheetBuy(s) {
       </div>
       <div id="del-actions" style="display:none;margin-top:14px;">
         <button class="btn-p" id="order-btn" onclick="placeOrder()">⚡ Order Instant Delivery</button>
-        <button class="btn-s" onclick="openSched()">📦 Schedule Delivery</button>
       </div>
     </div>`;
 }
@@ -2134,7 +2291,6 @@ function animRider(sLat, sLng) {
       clearInterval(S.riderT); S.riderT=null;
       renderStages(4);
       toast('🎉 Order delivered! Enjoy!');
-      addAct({ icon:'📦', bg:'#DCFCE7', title:`${S.product?S.product.name:'Order'} — Delivered`, meta:`${S.marker?S.marker.name:''} • Just now`, stat:'s-done', statTxt:'Delivered' });
       setTimeout(()=>{ if(S.riderM){map.removeLayer(S.riderM);S.riderM=null;} if(S.riderL){map.removeLayer(S.riderL);S.riderL=null;} }, 2500);
       return;
     }
@@ -2144,11 +2300,63 @@ function animRider(sLat, sLng) {
 }
 
 function closeDel() {
+  // Just hide the overlay — keep rider animation running in background
   document.getElementById('delivery-overlay').classList.remove('on');
-  if(S.riderM){map.removeLayer(S.riderM);S.riderM=null;}
-  if(S.riderL){map.removeLayer(S.riderL);S.riderL=null;}
-  if(S.riderT){clearInterval(S.riderT);S.riderT=null;}
-  map.setView([USER_LAT,USER_LNG],15,{animate:true});
+  // If delivery still active, show a live card in Activity tab
+  if (S.riderT || S.stage < 4) {
+    renderLiveDeliveryCard();
+  }
+}
+
+let _liveCardTimer = null;
+function renderLiveDeliveryCard() {
+  const stageName = S.stage >= 0 && S.stage < STAGES.length ? STAGES[S.stage].name : 'In Progress';
+  const prodName = S.product ? S.product.name : 'Order';
+  const shopName = S.marker ? S.marker.name : '';
+  const actList = document.getElementById('act-list');
+  // Remove old live card if exists
+  const old = document.getElementById('live-delivery-card');
+  if (old) old.remove();
+  const card = document.createElement('div');
+  card.id = 'live-delivery-card';
+  card.className = 'act-item';
+  card.style.cssText = 'border:2px solid #22C55E;background:#F0FDF4;cursor:pointer';
+  card.onclick = () => {
+    switchTab('near');
+    setTimeout(()=>{
+      document.getElementById('delivery-overlay').classList.add('on');
+      // Restore rider on map if still animating
+      if (S.riderM && S.stage < 4) {
+        map.fitBounds([[S.marker.lat,S.marker.lng],[USER_LAT,USER_LNG]], {padding:[70,70], animate:true});
+      }
+    }, 120);
+  };
+  card.innerHTML = `
+    <div class="act-ico" style="background:#DCFCE7;position:relative">
+      🏍️
+      <div style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#22C55E;border:2px solid white;animation:uPulse 1.5s infinite"></div>
+    </div>
+    <div class="act-inf">
+      <div class="act-title">🚴 ${prodName} — Live Delivery</div>
+      <div class="act-meta">${shopName} • Tap to track</div>
+      <div style="font-size:11.5px;font-weight:700;color:#16A34A;margin-top:3px">${stageName}</div>
+    </div>
+    <span class="act-stat s-done" style="background:#DCFCE7;color:#16A34A">Live ●</span>`;
+  actList.insertBefore(card, actList.firstChild);
+  // Update card stage every 3s while active
+  clearInterval(_liveCardTimer);
+  _liveCardTimer = setInterval(()=>{
+    const c = document.getElementById('live-delivery-card');
+    if (!c) { clearInterval(_liveCardTimer); return; }
+    if (S.stage >= 4) {
+      c.remove(); clearInterval(_liveCardTimer);
+      addAct({ icon:'📦', bg:'#DCFCE7', title:`${S.product?S.product.name:'Order'} — Delivered`, meta:`${S.marker?S.marker.name:''} • Just now`, stat:'s-done', statTxt:'Delivered' });
+      return;
+    }
+    const sn = STAGES[S.stage] ? STAGES[S.stage].name : 'In Progress';
+    const sub = c.querySelector('.act-meta + div');
+    if (sub) sub.textContent = sn;
+  }, 3000);
 }
 
 /* ─── SCHEDULE ─── */
@@ -2392,6 +2600,18 @@ const NW_USERS = [
 
 const NW_POSTS = [
   {
+    id:'p7', uid:'u5', time:'just now', cat:'Community', catColor:'#8B5CF6',
+    text:'Just discovered NearHai — this app is changing how I interact with my neighbourhood. Ordered groceries in 35 mins, booked an electrician in 2 taps, and now I\'m reading local news from actual local journalists. This is what hyperlocal should feel like. 🙌\n\n#MadeInLudhiana',
+    tags:['#NearHai','#HyperLocal','#Ludhiana','#MadeInLudhiana'],
+    loc:'Model Town, Ludhiana',
+    likes:412, reposts:88, comments:41, views:7800,
+    media:null,
+    replies:[
+      {uid:'u1', text:'Love to see local tech being celebrated! Great product @amrit_dev 🙏', time:'3h 55m'},
+      {uid:'u8', text:'This is exactly what our city needs. Proud of the team!', time:'3h 40m'}
+    ]
+  },
+  {
     id:'p1', uid:'u4', time:'3m', cat:'Alert', catColor:'#EF4444',
     text:'🚨 TRAFFIC ALERT: Major jam on Ferozepur Road near Bus Stand due to VIP movement. Expect 30–40 min delays. Alternate via GT Road recommended.',
     tags:['#TrafficAlert','#Ferozepur Road','#Ludhiana'],
@@ -2460,18 +2680,6 @@ const NW_POSTS = [
     media:{ type:'banner', emoji:'💡', label:'Tech Meetup — Tomorrow 2PM • CoWork Hub' },
     replies:[
       {uid:'u5', text:'Already registered! See everyone there 🙌', time:'2h 50m'}
-    ]
-  },
-  {
-    id:'p7', uid:'u5', time:'4h', cat:'Community', catColor:'#8B5CF6',
-    text:'Just discovered NearHai — this app is changing how I interact with my neighbourhood. Ordered groceries in 35 mins, booked an electrician in 2 taps, and now I\'m reading local news from actual local journalists. This is what hyperlocal should feel like. 🙌\n\n#MadeInLudhiana',
-    tags:['#NearHai','#HyperLocal','#Ludhiana','#MadeInLudhiana'],
-    loc:'Model Town, Ludhiana',
-    likes:412, reposts:88, comments:41, views:7800,
-    media:null,
-    replies:[
-      {uid:'u1', text:'Love to see local tech being celebrated! Great product @amrit_dev 🙏', time:'3h 55m'},
-      {uid:'u8', text:'This is exactly what our city needs. Proud of the team!', time:'3h 40m'}
     ]
   }
 ];
@@ -2674,7 +2882,7 @@ function openPost(pid) {
     </div>`;
   }).join('');
   document.getElementById('po-body').innerHTML = buildPostHTML(p, true) + `
-    <div style="padding:12px 14px;border-top:4px solid var(--bg)">
+    <div id="po-reply-section" style="padding:12px 14px;border-top:4px solid var(--bg)">
       <div style="font-size:13.5px;font-weight:700;margin-bottom:10px">💬 ${p.replies.length} Replies</div>
       ${repliesHTML}
     </div>`;
@@ -2715,10 +2923,44 @@ function sendComment() {
     p.replies.push({ uid:'u5', text:txt, time:'just now' });
     p.comments++;
     document.querySelectorAll(`#cmts-${p.id}`).forEach(el=>el.textContent=p.comments);
+    // Re-render comment list so new reply appears immediately
+    const cl = document.getElementById('comment-list');
+    cl.innerHTML = p.replies.map(r=>{
+      const u = nwUser(r.uid);
+      return `<div class="comment-item">
+        <div class="cm-av" style="background:${u.color}">${u.av}</div>
+        <div class="cm-body">
+          <div class="cm-name">${u.name} <span style="color:var(--text-sec);font-weight:400">${u.handle}</span></div>
+          <div class="cm-text">${r.text}</div>
+          <div class="cm-time">${r.time} ago</div>
+        </div>
+      </div>`;
+    }).join('');
+    cl.scrollTop = cl.scrollHeight;
+    // Also refresh the post detail overlay replies if it's open
+    if (document.getElementById('post-overlay').classList.contains('open')) {
+      refreshPostDetailReplies(p);
+    }
   }
   inp.value='';
   toast('✅ Reply posted!');
-  closeComments();
+}
+
+function refreshPostDetailReplies(p) {
+  const repliesHTML = p.replies.map(r=>{
+    const ru = nwUser(r.uid);
+    return `<div class="comment-item" style="border-bottom:1px solid #F9FAFB">
+      <div class="cm-av" style="background:${ru.color}">${ru.av}</div>
+      <div class="cm-body">
+        <div class="cm-name">${ru.name} <span style="color:var(--text-sec);font-weight:400;font-size:11.5px">${ru.handle} · ${r.time}</span></div>
+        <div class="cm-text">${r.text}</div>
+      </div>
+    </div>`;
+  }).join('');
+  const replySection = document.getElementById('po-reply-section');
+  if (replySection) {
+    replySection.innerHTML = `<div style="font-size:13.5px;font-weight:700;margin-bottom:10px">💬 ${p.replies.length} Replies</div>${repliesHTML}`;
+  }
 }
 
 /* ── Composer ── */
@@ -2778,7 +3020,94 @@ function renderExplore() {
 }
 function goMode(mode) { switchTab('near'); setMode(mode); }
 
-/* ─── CART ─── */
+/* Near (all) mode panel */
+function renderNearPanel() {
+  const panel = document.getElementById('mode-panel');
+  mpExpanded = false;
+  document.getElementById('mp-expanded-body').classList.remove('open');
+  const btn = document.getElementById('mp-expand-btn');
+  btn.classList.remove('expanded');
+  btn.querySelector('span').textContent = 'See All';
+  // Flatten all items with mode tags
+  const allItems = [
+    ...DATA.buy.map(d=>({...d, _mode:'buy'})),
+    ...DATA.travel.map(d=>({...d, _mode:'travel'})),
+    ...DATA.services.map(d=>({...d, _mode:'services'})),
+    ...DATA.explore.map(d=>({...d, _mode:'explore'})),
+    ...DATA.emergency.map(d=>({...d, _mode:'emergency'}))
+  ];
+  document.getElementById('mp-mode-name').textContent = '📍 Nearby';
+  document.getElementById('mp-mode-count').textContent = `• ${allItems.length} places`;
+  document.getElementById('mp-quick-row').innerHTML = allItems.map(d=>{
+    const col = MODE_CFG[d._mode].color;
+    return `<div class="mp-qcard" onclick="searchGoTo('${d.id}','${d._mode}')">
+      <div class="mp-qc-ico">${d.emoji}</div>
+      <div class="mp-qc-name" style="font-size:11px">${d.name||d.drvName||d.type}</div>
+      <div class="mp-qc-badge" style="color:${col}">${MODE_CFG[d._mode].icon}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('mp-list').innerHTML = allItems.map(d=>{
+    const meta = getMpMeta(d, d._mode);
+    return `<div class="mp-list-item" onclick="searchGoTo('${d.id}','${d._mode}')">
+      <div class="mp-li-ico">${d.emoji}</div>
+      <div class="mp-li-info">
+        <div class="mp-li-name">${meta.name}</div>
+        <div class="mp-li-sub">${meta.desc}</div>
+      </div>
+      <div class="mp-li-right">
+        <div class="mp-li-stat">${meta.stat}</div>
+        <div class="mp-li-dist">${meta.dist}</div>
+        <div class="mp-li-arr">›</div>
+      </div>
+    </div>`;
+  }).join('');
+  panel.classList.add('visible');
+  shiftZoom(true);
+}
+
+/* Compose modal (inside post detail) — reply to author */
+function openReplyToAuthor() {
+  const p = NW_POSTS.find(x=>x.id===OPEN_POST_ID);
+  if (!p) return;
+  const author = nwUser(p.uid);
+  document.getElementById('compose-reply-to').textContent = `Replying to ${author.handle}`;
+  const quoting = document.getElementById('compose-quoting');
+  quoting.style.display = 'block';
+  document.getElementById('compose-quote-name').textContent = author.name;
+  document.getElementById('compose-quote-text').textContent = p.text.replace(/\n/g,' ');
+  document.getElementById('compose-modal').classList.add('on');
+  setTimeout(()=>document.getElementById('compose-modal-text').focus(), 100);
+}
+function closeComposeModal(e) {
+  if (!e || e.target===document.getElementById('compose-modal'))
+    document.getElementById('compose-modal').classList.remove('on');
+}
+function submitModalPost() {
+  const txt = document.getElementById('compose-modal-text').value.trim();
+  if (!txt) { toast('⚠️ Write something first!'); return; }
+  const p = OPEN_POST_ID ? NW_POSTS.find(x=>x.id===OPEN_POST_ID) : null;
+  if (p) {
+    // Add as a reply to the current post
+    p.replies.push({ uid:'u5', text:txt, time:'just now' });
+    p.comments++;
+    document.querySelectorAll(`#cmts-${p.id}`).forEach(el=>el.textContent=p.comments);
+    // Refresh the reply section in post detail
+    refreshPostDetailReplies(p);
+    toast('✅ Reply posted!');
+  } else {
+    // Fallback: post to feed
+    const newPost = {
+      id:'p_'+Date.now(), uid:'u5', time:'now', cat:'Community', catColor:'#8B5CF6',
+      text:txt, tags:['#NearHai','#Ludhiana'], loc:'Model Town, Ludhiana',
+      likes:0, reposts:0, comments:0, views:1, media:null, replies:[]
+    };
+    NW_POSTS.unshift(newPost);
+    renderFeed();
+    toast('✅ Posted to NearWorld!');
+  }
+  document.getElementById('compose-modal-text').value = '';
+  document.getElementById('compose-modal').classList.remove('on');
+}
 const CART = []; // { shopId, shopName, shopEmoji, prodName, prodEmoji, price, qty }
 
 function cartToggle(shopId, prodIdx) {
@@ -2950,11 +3279,11 @@ function placeCheckoutOrder() {
   const itemCount   = CART.reduce((s,c)=>s+c.qty, 0);
 
   // Build success detail
-  const typeLabel  = CO_DELIVERY==='instant' ? '⚡ Instant (30–45 min)' : `📦 ${CO_SLOT}`;
+  const typeLabel  = CO_DELIVERY==='instant' ? '⚡ Instant (10–30 min)' : `📦 ${CO_SLOT}`;
   const itemNames  = CART.map(c=>`${c.prodName} ×${c.qty}`).join(', ');
   document.getElementById('cs-sub').textContent =
     CO_DELIVERY==='instant'
-      ? 'Your rider is being assigned. Delivery in 30–45 minutes!'
+      ? 'Your rider is being assigned. Delivery in 10–30 minutes!'
       : `Scheduled: ${CO_SLOT}. We'll notify you before dispatch.`;
   document.getElementById('cs-detail').innerHTML = `
     <div class="cs-row"><span class="l">Items</span><span class="r">${itemCount} item${itemCount>1?'s':''}</span></div>
@@ -3103,11 +3432,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
   renderExplore();
   initMap();
   SEARCH_INDEX = buildSearchIndex();
-  // Default pill active = Near
+  // Default pill active = Near, show panel after map loads
   document.querySelector('.pill[data-mode="all"]').classList.add('active');
+  setTimeout(()=> renderNearPanel(), 200);
   setTimeout(()=>{
     document.getElementById('splash').classList.add('gone');
-    setTimeout(()=>toast('👋 Welcome to NearHai, Rahul!'), 500);
+    setTimeout(()=>toast('👋 Welcome to NearHai, Arya!'), 500);
   }, 2000);
   document.getElementById('composer-inp').addEventListener('focus', ()=>{
     document.getElementById('composer-bar').style.display='flex';
