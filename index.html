@@ -2030,6 +2030,7 @@ function closeModePanel() {
     document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.mode === 'all'));
     loadAllMarkers();
     document.getElementById('fab-flag').classList.remove('on');
+    renderNearPanel();
   }
 }
 
